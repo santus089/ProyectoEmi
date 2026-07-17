@@ -1,0 +1,270 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    background-color: #ffffff;
+}
+
+.main-layout {
+    min-height: 100vh;
+    width: 100vw;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.content-container {
+    background-color: #1a28a0; 
+    flex: 1;                  
+    min-height: 100vh;        
+    padding: 1rem;
+    box-sizing: border-box;   
+    min-width: 0;
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    height: 100vh;
+    width: 250px;
+    overflow: auto;
+}
+
+.sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #333333;
+    padding: 16px;
+    text-decoration: none;
+    font-family: ui-sans-serif, sans-serif;
+    transition: background-color 0.1s ease;
+}
+
+.sidebar a.active {
+    background-color: #04AA6D;
+    color: white;
+}
+
+.sidebar a:hover:not(.active) {
+    background-color: #f1f1f1;
+    color: black;
+}
+
+/* --- GRID DE TARJETAS SUPERIORES --- */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.card {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+    font-family: ui-sans-serif, sans-serif;
+    color: #333333;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card .card-number {
+    margin: 10px 0;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #111111;
+}
+
+.card .card-tag {
+    font-size: 0.8rem;
+    color: #04AA6D;
+    font-weight: 500;
+}
+
+/* --- TARJETAS CONTENEDORAS (EVALUACIONES Y CALENDARIO) --- */
+.card-evaluaciones {
+    background-color: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    font-family: ui-sans-serif, sans-serif;
+    color: #333333;
+    
+    /* CORRECCIÓN: Quitamos max-width y permitimos comportamiento elástico */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.card-evaluaciones h4 {
+    margin: 0;
+    font-size: 1.3rem;
+    padding-bottom: 2rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* --- FILAS DE EVALUACIONES --- */
+.evaluacion-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+}
+
+.evaluacion-fila:last-child {
+    margin-bottom: 0;
+}
+
+.texto-con-barra {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.texto-con-barra h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #222222;
+    width: 280px; /* Ancho fijo óptimo para los textos */
+    flex-shrink: 0;
+}
+
+.barra-color {
+    flex: 1;             /* Hace que la barra ocupe de manera elástica el centro */
+    height: 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+/* Colores de las barras */
+.color-azul { background-color: #3b82f6; }
+.color-verde { background-color: #10b981; }
+.color-naranja { background-color: #f59e0b; }
+.color-morado { background-color: #8b5cf6; }
+
+.numero-final {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #444444;
+    padding-left: 15px;
+    min-width: 25px;
+    text-align: right;
+}
+
+/* --- COMPONENTE CALENDARIO --- */
+.calendario-header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.calendario-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #222222;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding-bottom: 0; /* Reseteo del h4 global */
+}
+
+.calendario-dias-semana {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 0;
+    padding-bottom: 10px;
+    /* Esto alinea el texto con el inicio de la grilla de abajo */
+    border-left: 1px solid transparent; 
+    border-right: 1px solid transparent;
+}
+
+.dia-nombre {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #888888;
+    display: block;
+}
+
+/*Distribuye las filas del calendario de forma uniforme */
+.calendario-grilla {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex: 1;
+    border-top: 1px solid #eef2f5;
+    border-left: 1px solid #eef2f5;
+    background-color: #ffffff;
+    align-content: stretch;
+    
+}
+
+.calendario-celda {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Cambiamos aspect-ratio por una altura mínima cómoda para que no se estiren de más */
+    min-height: 50px; 
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #333333;
+    
+    /* Genera el efecto de cuadrícula/líneas entre medias */
+    border-right: 1px solid #eef2f5;
+    border-bottom: 1px solid #eef2f5;
+    box-sizing: border-box;        /* Transforma el indicador en un círculo perfecto */
+}
+
+.dia-activo {
+    cursor: default;
+}
+
+.dia-vacio {
+    background-color: #fafbfc;
+}
+
+/* Día actual destacado */
+.calendario-celda.hoy {
+    color: #ffffff !important; /* Cambiamos el texto a blanco para que resalte dentro del círculo */
+    font-weight: bold;
+    position: relative;
+    z-index: 2;
+}
+
+.calendario-celda.hoy::before {
+    content: '';
+    position: absolute;
+    width: 36px;  /* Tamaño del círculo */
+    height: 36px;
+    background-color: #04AA6D; /* Verde sólido idéntico a tu diseño anterior */
+    border-radius: 50%;
+    z-index: -1;  /* Se posiciona por detrás del número */
+    
+    /* Centrado absoluto perfecto dentro del recuadro con líneas */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 8px rgba(4, 170, 109, 0.3);
+}
+
