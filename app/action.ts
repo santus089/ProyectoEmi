@@ -207,3 +207,36 @@ export async function obtenerAnamnesisPaciente(pacienteId: number) {
     return { success: false, error: err.message, data: [] };
   }
 }
+
+
+ // Guardar antropometria del paciente
+export async function guardarAntropometria(datos: any) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionAntropometria')
+      .insert([datos])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+
+// Obtener datos de antropometria del paciente
+export async function obtenerAntropometriaPaciente(pacienteId: number) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionAntropometria')
+      .select('*')
+      .eq('pacienteId', pacienteId)
+      .order('fecha', { ascending: false });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
