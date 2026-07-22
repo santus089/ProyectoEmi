@@ -5,17 +5,18 @@ import { supabase } from "./lib/supabase";
 // guarda pacientes del formulario
 export async function guardarPaciente(datos: any) {
   try {
-    // 1. Validamos que venga la propiedad correcta (en tu página es formFechaNacimiento)
     const fechaOriginal = datos.formFechaNacimiento || datos.fechaNacimiento;
     
     if (!fechaOriginal) {
       return { success: false, error: 'La fecha de nacimiento es obligatoria' };
     }
 
-    // 2. Convertimos la fecha al formato TIMESTAMP(3) requerido por la tabla
-    const fechaTimestamp = new Date(fechaOriginal).toISOString();
+    // Solución Zona Horaria: Le agregamos T12:00:00 para evitar descalces de fecha por UTC
+    const fechaFormateada = fechaOriginal.includes('T') 
+      ? fechaOriginal 
+      : `${fechaOriginal}T12:00:00.000Z`;
 
-    // Insertamos directo en la tabla 'Paciente' sin incluir el 'id' (se encarga el SERIAL)
+    // Insertamos en la tabla 'Paciente'
     const { data, error } = await supabase
       .from('Paciente') 
       .insert([
@@ -23,21 +24,22 @@ export async function guardarPaciente(datos: any) {
           rut: datos.rut,
           nombre: datos.nombre,
           apellido: datos.apellido,
-          fechaNacimiento: fechaTimestamp, 
+          fechaNacimiento: fechaFormateada, 
           telefono: datos.telefono,
           correo: datos.correo,
           genero: datos.genero
         }
       ])
-      .select()
+      .select();
 
     if (error) {
-      return { success: false, error: error.message }
+      console.error("Error Supabase Guardar Paciente:", error);
+      return { success: false, error: error.message };
     }
 
-    return { success: true, data }
+    return { success: true, data };
   } catch (err: any) {
-    return { success: false, error: err.message || 'Error inesperado en el servidor' }
+    return { success: false, error: err.message || 'Error inesperado en el servidor' };
   }
 }
 
