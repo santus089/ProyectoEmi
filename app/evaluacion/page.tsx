@@ -15,6 +15,7 @@ import {
 } from '../action';
 
 import { calcularResultadosAntropometria } from '../lib/calculosAntropometria';
+import { guardarFMS, obtenerFMSPaciente } from '../action';
 
 export default function EvaluacionesPage() {
     const [pacientes, setPacientes] = useState<any[]>([]);
@@ -24,18 +25,18 @@ export default function EvaluacionesPage() {
     const [cargando, setCargando] = useState(true);
     const [guardando, setGuardando] = useState(false);
 
-    // --- ESTADOS BUSCADOR ---
+    // ESTADOS BUSCADOR 
     const [busqueda, setBusqueda] = useState("");
     const [mostrarResultados, setMostrarResultados] = useState(false);
 
-    // --- ESTADOS EVALUACIÓN 1: ANAMNESIS ---
+    //  ESTADOS EVALUACIÓN 1: ANAMNESIS ---
     const [antecedentesMorbidos, setAntecedentesMorbidos] = useState("");
     const [antecedentesMedicos, setAntecedentesMedicos] = useState("");
     const [informacionNutricional, setInformacionNutricional] = useState("");
     const [informacionDeportiva, setInformacionDeportiva] = useState("");
     const [objetivos, setObjetivos] = useState("");
 
-    // --- ESTADOS EVALUACIÓN 2: ANTROPOMETRÍA ISAK ---
+    // ESTADOS EVALUACIÓN 2: ANTROPOMETRÍA ISAK 
     const [antropometria, setAntropometria] = useState({
         peso: "", talla: "", diametroHumeral: "", diametroFemoral: "",
         perimetroBrazoRelajadoDer: "", perimetroBrazoFlexionadoDer: "",
@@ -51,6 +52,31 @@ export default function EvaluacionesPage() {
     const manejarCambioAntropometria = (campo: string, valor: string) => {
         setAntropometria(prev => ({ ...prev, [campo]: valor }));
     };
+
+    //  ESTADOS EVALUACIÓN 3: FMS 
+    const [fmsData, setFmsData] = useState({
+        sentadillaProfunda: 0,
+        pasoValla: 0,
+        estocadaLinea: 0,
+        movilidadHombros: 0,
+        elevacionPiernaRecta: 0,
+        estabilidadTroncoFlexion: 0,
+        estabilidadRotatoria: 0,
+        notas: ""
+    });
+
+    const manejarCambioFMS = (campo: string, valor: number | string) => {
+    setFmsData(prev => ({ ...prev, [campo]: valor }));
+    };
+
+    // Calculo automatico del puntaje total FMS
+    const puntajeTotalFMS = Number(fmsData.sentadillaProfunda) +
+                        Number(fmsData.pasoValla) +
+                        Number(fmsData.estocadaLinea) +
+                        Number(fmsData.movilidadHombros) +
+                        Number(fmsData.elevacionPiernaRecta) +
+                        Number(fmsData.estabilidadTroncoFlexion) +
+                        Number(fmsData.estabilidadRotatoria);
 
     // Función auxiliar para calcular edad
     const obtenerEdad = (fechaNacimiento: string) => {
@@ -86,6 +112,7 @@ export default function EvaluacionesPage() {
         const pId = parseInt(pacienteSeleccionadoId);
 
         async function cargarDatosPaciente() {
+
             // Cargar Anamnesis
             const resAnam = await obtenerAnamnesisPaciente(pId);
             if (resAnam.success && resAnam.data.length > 0) {
@@ -134,6 +161,23 @@ export default function EvaluacionesPage() {
             } else {
                 limpiarFormularioAntropometria();
             }
+            // Cargar FMS
+            const resFMS = await obtenerFMSPaciente(pId);
+            if (resFMS.success && resFMS.data.length > 0) {
+                const f = resFMS.data[0];
+                setFmsData({
+                    sentadillaProfunda: f.sentadillaProfunda || 0,
+                    pasoValla: f.pasoValla || 0,
+                    estocadaLinea: f.estocadaLinea || 0,
+                    movilidadHombros: f.movilidadHombros || 0,
+                    elevacionPiernaRecta: f.elevacionPiernaRecta || 0,
+                    estabilidadTroncoFlexion: f.estabilidadTroncoFlexion || 0,
+                    estabilidadRotatoria: f.estabilidadRotatoria || 0,
+                    notas: f.notas || ""
+                });
+            } else {
+                limpiarFormularioFMS();
+            }
         }
 
         cargarDatosPaciente();
@@ -144,6 +188,18 @@ export default function EvaluacionesPage() {
         setInformacionNutricional(""); setInformacionDeportiva(""); setObjetivos("");
     };
 
+    const limpiarFormularioFMS = () => {
+    setFmsData({
+        sentadillaProfunda: 0,
+        pasoValla: 0,
+        estocadaLinea: 0,
+        movilidadHombros: 0,
+        elevacionPiernaRecta: 0,
+        estabilidadTroncoFlexion: 0,
+        estabilidadRotatoria: 0,
+        notas: ""
+        });
+    };
     const limpiarFormularioAntropometria = () => {
         setAntropometria({
             peso: "", talla: "", diametroHumeral: "", diametroFemoral: "",
@@ -250,7 +306,7 @@ export default function EvaluacionesPage() {
         else alert(`Error al guardar: ${res.error}`);
     };
 
-    // Función para generar e imprimir la ficha PDF resumen
+    // Función para generar e imprimir la ficha PDF resumen Amnesis
     const generarPDFResumen = () => {
         if (!pacienteActual || !resultadosCalculados) return;
 
@@ -305,11 +361,105 @@ export default function EvaluacionesPage() {
         `);
         ventanaPDF.document.close();
     };
+    const manejarGuardarFMS = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
+
+    setGuardando(true);
+    const res = await guardarFMS({
+        pacienteId: parseInt(pacienteSeleccionadoId),
+        sentadillaProfunda: Number(fmsData.sentadillaProfunda),
+        pasoValla: Number(fmsData.pasoValla),
+        estocadaLinea: Number(fmsData.estocadaLinea),
+        movilidadHombros: Number(fmsData.movilidadHombros),
+        elevacionPiernaRecta: Number(fmsData.elevacionPiernaRecta),
+        estabilidadTroncoFlexion: Number(fmsData.estabilidadTroncoFlexion),
+        estabilidadRotatoria: Number(fmsData.estabilidadRotatoria),
+        puntajeTotal: puntajeTotalFMS,
+        notas: fmsData.notas
+    });
+    setGuardando(false);
+
+    if (res.success) alert("¡Evaluación FMS (A3-3) guardada exitosamente!");
+    else alert(`Error al guardar: ${res.error}`);
+};
+
+    const generarPDFFMS = () => {
+        if (!pacienteActual) return;
+
+        const ventanaPDF = window.open("", "_blank");
+        if (!ventanaPDF) return alert("Por favor permita las ventanas emergentes.");
+
+        const esRiesgoBajo = puntajeTotalFMS >= 14;
+        const mensajeDiagnostico = esRiesgoBajo
+            ? "Si la sumatoria es igual o mayor a 14, existe un movimiento funcional aceptable con riesgo bajo o estándar de lesión."
+            : "Si la sumatoria es menor a 14, el riesgo de sufrir una lesión musculoesquelética se multiplica.";
+
+        ventanaPDF.document.write(`
+            <html>
+                <head>
+                    <title>Informe FMS - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 25px; color: #333; }
+                        h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 6px; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+                        th { background-color: #f1f5f9; color: #1e293b; }
+                        .score { text-align: center; font-weight: bold; font-size: 1.1rem; }
+                        .box-diagnostic { padding: 15px; border-radius: 8px; font-weight: bold; line-height: 1.5; margin-top: 15px; background-color: ${esRiesgoBajo ? '#dcfce7' : '#fee2e2'}; color: ${esRiesgoBajo ? '#166534' : '#991b1b'}; border: 1px solid ${esRiesgoBajo ? '#86efac' : '#fca5a5'}; }
+                        @media print { button { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <button onclick="window.print()" style="background: #4f46e5; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px;">Imprimir / Guardar en PDF</button>
+
+                    <h1>Informe de Evaluación de Movimiento (FMS)</h1>
+
+                    <div class="info-grid">
+                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
+                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Fecha de Evaluación:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prueba de Movimiento (FMS)</th>
+                                <th style="width: 120px; text-align: center;">Puntaje (0 - 3)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Sentadilla Profunda</td><td class="score">${fmsData.sentadillaProfunda}</td></tr>
+                            <tr><td>Paso de Valla</td><td class="score">${fmsData.pasoValla}</td></tr>
+                            <tr><td>Estocada en Línea</td><td class="score">${fmsData.estocadaLinea}</td></tr>
+                            <tr><td>Movilidad de Hombros</td><td class="score">${fmsData.movilidadHombros}</td></tr>
+                            <tr><td>Elevación Activa de la Pierna Recta</td><td class="score">${fmsData.elevacionPiernaRecta}</td></tr>
+                            <tr><td>Estabilidad de Tronco en Flexión</td><td class="score">${fmsData.estabilidadTroncoFlexion}</td></tr>
+                            <tr><td>Estabilidad Rotatoria</td><td class="score">${fmsData.estabilidadRotatoria}</td></tr>
+                            <tr style="background-color: #f8fafc; font-weight: bold;">
+                                <td style="text-align: right;">SUMATORIA TOTAL:</td>
+                                <td class="score" style="color: #4f46e5; font-size: 1.3rem;">${puntajeTotalFMS} / 21</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="box-diagnostic">
+                        📌 <strong>Interpretación Diagnóstica:</strong><br/>
+                        "${mensajeDiagnostico}"
+                    </div>
+
+                    ${fmsData.notas ? `<div style="margin-top: 20px; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;"><strong>Notas / Observaciones:</strong><p>${fmsData.notas}</p></div>` : ''}
+                </body>
+            </html>
+        `);
+        ventanaPDF.document.close();
+    };
 
     const evaluacionesList = [
         { id: 1, nombre: "A3-1: Anamnesis" },
         { id: 2, nombre: "A3-2: Antropometría" },
-        { id: 3, nombre: "Evaluación 3" },
+        { id: 3, nombre: "A3-3: Movimiento(FMS)" },
         { id: 4, nombre: "Evaluación 4" },
         { id: 5, nombre: "Evaluación 5" },
         { id: 6, nombre: "Evaluación 6" },
@@ -631,13 +781,85 @@ export default function EvaluacionesPage() {
                                     </div>
                                 )}
 
-                                {evaluacionActiva > 2 && (
+                                {/* EVALUACIÓN 3: EVALUACIÓN DE MOVIMIENTO (FMS) */}
+                                {evaluacionActiva === 3 && (
+                                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cbd5e0', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>
+                                            <h2 style={{ margin: 0, color: '#2d3748' }}>Evaluación de Movimiento (FMS - A3-3)</h2>
+                                            <button type="button" onClick={generarPDFFMS} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.5rem 1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                📄 Generar Reporte PDF
+                                            </button>
+                                        </div>
+                                        {/* Envio de datos evaluacion FMS */}
+
+                                        <form onSubmit={manejarGuardarFMS} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                    {[
+                                                        { campo: 'sentadillaProfunda', label: 'Sentadilla profunda' },
+                                                        { campo: 'pasoValla', label: 'Paso de valla' },
+                                                        { campo: 'estocadaLinea', label: 'Estocada en línea' },
+                                                        { campo: 'movilidadHombros', label: 'Movilidad de hombros' },
+                                                        { campo: 'elevacionPiernaRecta', label: 'Elevación activa de la pierna recta' },
+                                                        { campo: 'estabilidadTroncoFlexion', label: 'Estabilidad de tronco en flexión' },
+                                                        { campo: 'estabilidadRotatoria', label: 'Estabilidad rotatoria' }
+                                                    ].map((item) => (
+                                                        <div key={item.campo} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0', borderBottom: '1px solid #edf2f7' }}>
+                                                            <span style={{ fontWeight: 'bold', color: '#4a5568', fontSize: '0.95rem' }}>{item.label}</span>
+                                                            <select
+                                                                value={(fmsData as any)[item.campo]}
+                                                                onChange={(e) => manejarCambioFMS(item.campo, Number(e.target.value))}
+                                                                style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontWeight: 'bold', color: '#333', minWidth: '100px' }}
+                                                            >
+                                                                <option value={0}>0 puntos</option>
+                                                                <option value={1}>1 punto</option>
+                                                                <option value={2}>2 puntos</option>
+                                                                <option value={3}>3 puntos</option>
+                                                            </select>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* TABLERO DE RESULTADO TOTAL Y DIAGNÓSTICO */}
+                                            <div style={{ background: puntajeTotalFMS >= 14 ? '#ecfdf5' : '#fef2f2', border: `1px solid ${puntajeTotalFMS >= 14 ? '#a7f3d0' : '#fecaca'}`, padding: '1.2rem', borderRadius: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b' }}>Puntaje Total Sumado:</span>
+                                                    <span style={{ fontSize: '1.6rem', fontWeight: 'bold', color: puntajeTotalFMS >= 14 ? '#059669' : '#dc2626' }}>{puntajeTotalFMS} / 21 pts</span>
+                                                </div>
+                                                <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500', color: puntajeTotalFMS >= 14 ? '#065f46' : '#991b1b' }}>
+                                                    📌 {puntajeTotalFMS >= 14
+                                                        ? "Si la sumatoria es igual o mayor a 14, existe un movimiento funcional aceptable con riesgo bajo o estándar de lesión."
+                                                        : "Si la sumatoria es menor a 14, el riesgo de sufrir una lesión musculoesquelética se multiplica."}
+                                                </p>
+                                            </div>
+
+                                            {/* NOTAS */}
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <label style={{ fontWeight: 'bold', color: '#4a5568', display: 'block', marginBottom: '0.5rem' }}>Notas / Observaciones de la Evaluación</label>
+                                                <textarea
+                                                    value={fmsData.notas}
+                                                    onChange={(e) => manejarCambioFMS('notas', e.target.value)}
+                                                    placeholder="Asimetrías detectadas, dolor en algún movimiento, etc..."
+                                                    rows={3}
+                                                    style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e0', color: '#333' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button type="submit" disabled={guardando} style={{ backgroundColor: '#10b981', color: '#ffffff', padding: '0.8rem 2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}>
+                                                    {guardando ? "Guardando FMS..." : "Guardar Evaluación FMS"}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+                                {evaluacionActiva > 3 && (
                                     <div style={{ background: '#f8fafc', padding: '3rem', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
                                         <h3 style={{ color: '#718096', margin: 0 }}>Módulo en construcción</h3>
                                         <p style={{ color: '#a0aec0' }}>Próximamente agregaremos los campos correspondientes para esta evaluación clínica.</p>
                                     </div>
                                 )}
-
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: '#f7fafc', borderRadius: '8px', border: '1px dashed #cbd5e0' }}>

@@ -220,6 +220,7 @@ export default function AgendaMensualPage() {
                                             <div key={cita.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#fff', borderRadius: '6px', border: '1px solid #edf2f7' }}>
                                                 <div>
                                                     <span style={{ fontWeight: 'bold', color: '#4f46e5', marginRight: '1rem' }}>{cita.hora.substring(0,5)} hrs</span>
+                                                    <span style={{ fontWeight: 'bold', color: '#4f46e5', marginRight: '1rem' }}>{cita.horaFin.substring(0,5)} hrs</span>
                                                     <strong style={{ color: '#2d3748' }}>{cita.Paciente?.nombre} {cita.Paciente?.apellido}</strong>
                                                     <span style={{ color: '#718096', marginLeft: '1rem', fontSize: '0.9rem' }}>- Motivo: {cita.motivo}</span>
                                                 </div>

@@ -242,3 +242,45 @@ export async function obtenerAntropometriaPaciente(pacienteId: number) {
     return { success: false, error: err.message, data: [] };
   }
 }
+ // Guardar evaluacion:3 FMS
+export async function guardarFMS(datos: {
+  pacienteId: number;
+  sentadillaProfunda: number;
+  pasoValla: number;
+  estocadaLinea: number;
+  movilidadHombros: number;
+  elevacionPiernaRecta: number;
+  estabilidadTroncoFlexion: number;
+  estabilidadRotatoria: number;
+  puntajeTotal: number;
+  notas?: string;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionFMS')
+      .insert([datos])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+
+// Obtener evaluacion:3 FMS
+export async function obtenerFMSPaciente(pacienteId: number) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionFMS')
+      .select('*')
+      .eq('pacienteId', pacienteId)
+      .order('fecha', { ascending: false });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
