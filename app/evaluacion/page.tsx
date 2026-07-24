@@ -8,14 +8,17 @@ import '@/app/estilos/pacientes.css';
 
 import { 
   obtenerPaciente, 
-  guardarAnamnesis, 
-  obtenerAnamnesisPaciente,
-  guardarAntropometria,
-  obtenerAntropometriaPaciente
+  guardarAnamnesis, obtenerAnamnesisPaciente,
+  guardarAntropometria, obtenerAntropometriaPaciente,
+  guardarFMS, obtenerFMSPaciente,
+  guardarSaltoVertical, obtenerSaltoVerticalPaciente,
+  guardarVelocidad, obtenerVelocidadPaciente,
+  guardarFuerzaMaxima, obtenerFuerzaMaximaPaciente,
+  guardarGastoCalorico, obtenerGastoCaloricoPaciente
 } from '../action';
 
 import { calcularResultadosAntropometria } from '../lib/calculosAntropometria';
-import { guardarFMS, obtenerFMSPaciente } from '../action';
+
 
 export default function EvaluacionesPage() {
     const [pacientes, setPacientes] = useState<any[]>([]);
@@ -78,6 +81,57 @@ export default function EvaluacionesPage() {
                         Number(fmsData.estabilidadTroncoFlexion) +
                         Number(fmsData.estabilidadRotatoria);
 
+    // ESTADOS EVALUACION 4: SALTO VERTICAL
+    const [saltoVerticalData, setSaltoVerticalData] = useState({
+        cmj: "",
+        sj: "",
+        cmjB: "",
+        dropJump: "",
+        depthJump: "",
+        carreraCompleta: "",
+        notas: ""
+    });
+
+    const manejarCambioSaltoVertical = (campo: string, valor: string) => {
+        setSaltoVerticalData(prev => ({ ...prev, [campo]: valor }));
+    };
+
+    // ESTADOS EVALUACION 5: VELOCIDAD
+    const [velocidadData, setVelocidadData] = useState({
+        tiempo10m: "",
+        tiempo40m: "",
+        notas: ""
+    });
+
+    const manejarCambioVelocidad = (campo: string, valor: string) => {
+        setVelocidadData(prev => ({ ...prev, [campo]: valor }));
+    };
+
+    // Cálculos de velocidad en Km/h en tiempo real
+    const t10 = parseFloat(velocidadData.tiempo10m);
+    const t40 = parseFloat(velocidadData.tiempo40m);
+
+    const kmh10m = (t10 > 0) ? (36 / t10).toFixed(2) : "0.00";
+    const kmh40m = (t40 > 0) ? (144 / t40).toFixed(2) : "0.00";
+
+    // ESTADOS EVALUACION 6: FUERZA MAXIMA
+    const [fuerzaData, setFuerzaData] = useState({
+        pesoMuerto: "",
+        sentadilla: "",
+        pressBanca: "",
+        notas: ""
+    });
+
+    const manejarCambioFuerza = (campo: string, valor: string) => {
+        setFuerzaData(prev => ({ ...prev, [campo]: valor }));
+    };
+
+    // Cálculo en tiempo real del Total Levantado (Kg)
+    const pm = parseFloat(fuerzaData.pesoMuerto) || 0;
+    const sq = parseFloat(fuerzaData.sentadilla) || 0;
+    const bp = parseFloat(fuerzaData.pressBanca) || 0;
+    const totalLevantadoKg = (pm + sq + bp).toFixed(2);
+
     // Función auxiliar para calcular edad
     const obtenerEdad = (fechaNacimiento: string) => {
         if (!fechaNacimiento) return 25;
@@ -88,6 +142,35 @@ export default function EvaluacionesPage() {
         if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) edad--;
         return edad > 0 ? edad : 25;
     };
+
+    // ESTADOS EVALUACION 7: GASTO CALORICO 
+    const [nutricionData, setNutricionData] = useState({
+        gastoBasal: "",
+        gastoEntrenamiento: "",
+        gastoDescanso: "",
+        proteinaEntrenamiento: "",
+        proteinaDescanso: "",
+        grasasEntrenamiento: "",
+        grasasDescanso: "",
+        carbohidratosEntrenamiento: "",
+        carbohidratosDescanso: "",
+        especificaciones: ""
+    });
+
+    const manejarCambioNutricion = (campo: string, valor: string) => {
+        setNutricionData(prev => ({ ...prev, [campo]: valor }));
+    };
+
+    // Cálculo de calorías por Macros para referencia
+    const pEnt = parseFloat(nutricionData.proteinaEntrenamiento) || 0;
+    const gEnt = parseFloat(nutricionData.grasasEntrenamiento) || 0;
+    const cEnt = parseFloat(nutricionData.carbohidratosEntrenamiento) || 0;
+    const kcalMacrosEnt = (pEnt * 4) + (gEnt * 9) + (cEnt * 4);
+
+    const pDes = parseFloat(nutricionData.proteinaDescanso) || 0;
+    const gDes = parseFloat(nutricionData.grasasDescanso) || 0;
+    const cDes = parseFloat(nutricionData.carbohidratosDescanso) || 0;
+    const kcalMacrosDes = (pDes * 4) + (gDes * 9) + (cDes * 4);
 
     // Cargar pacientes
     useEffect(() => {
@@ -161,6 +244,7 @@ export default function EvaluacionesPage() {
             } else {
                 limpiarFormularioAntropometria();
             }
+
             // Cargar FMS
             const resFMS = await obtenerFMSPaciente(pId);
             if (resFMS.success && resFMS.data.length > 0) {
@@ -178,28 +262,82 @@ export default function EvaluacionesPage() {
             } else {
                 limpiarFormularioFMS();
             }
+
+            // Cargar Salto Vertical
+            const resSalto = await obtenerSaltoVerticalPaciente(pId);
+            if (resSalto.success && resSalto.data.length > 0) {
+                const s = resSalto.data[0];
+                setSaltoVerticalData({
+                    cmj: s.cmj?.toString() || "",
+                    sj: s.sj?.toString() || "",
+                    cmjB: s.cmjB?.toString() || "",
+                    dropJump: s.dropJump?.toString() || "",
+                    depthJump: s.depthJump?.toString() || "",
+                    carreraCompleta: s.carreraCompleta?.toString() || "",
+                    notas: s.notas || ""
+                });
+            } else {
+                limpiarFormularioSaltoVertical();
+            }
+
+            // Cargar Velocidad
+            const resVel = await obtenerVelocidadPaciente(pId);
+            if (resVel.success && resVel.data.length > 0) {
+                const v = resVel.data[0];
+                setVelocidadData({
+                    tiempo10m: v.tiempo10m?.toString() || "",
+                    tiempo40m: v.tiempo40m?.toString() || "",
+                    notas: v.notas || ""
+                });
+            } else {
+                limpiarFormularioVelocidad();
+            }
+            
+            // Cargar Fuerza Máxima
+            const resFuerza = await obtenerFuerzaMaximaPaciente(pId);
+            if (resFuerza.success && resFuerza.data.length > 0) {
+                const f = resFuerza.data[0];
+                setFuerzaData({
+                    pesoMuerto: f.pesoMuerto?.toString() || "",
+                    sentadilla: f.sentadilla?.toString() || "",
+                    pressBanca: f.pressBanca?.toString() || "",
+                    notas: f.notas || ""
+                });
+            } else {
+                limpiarFormularioFuerza();
+            }
+
+            // Cargar Gasto Calórico y Nutrición
+            const resNutri = await obtenerGastoCaloricoPaciente(pId);
+            if (resNutri.success && resNutri.data.length > 0) {
+                const n = resNutri.data[0];
+                setNutricionData({
+                    gastoBasal: n.gastoBasal?.toString() || "",
+                    gastoEntrenamiento: n.gastoEntrenamiento?.toString() || "",
+                    gastoDescanso: n.gastoDescanso?.toString() || "",
+                    proteinaEntrenamiento: n.proteinaEntrenamiento?.toString() || "",
+                    proteinaDescanso: n.proteinaDescanso?.toString() || "",
+                    grasasEntrenamiento: n.grasasEntrenamiento?.toString() || "",
+                    grasasDescanso: n.grasasDescanso?.toString() || "",
+                    carbohidratosEntrenamiento: n.carbohidratosEntrenamiento?.toString() || "",
+                    carbohidratosDescanso: n.carbohidratosDescanso?.toString() || "",
+                    especificaciones: n.especificaciones || ""
+                });
+            } else {
+                limpiarFormularioNutricion();
+            }
         }
 
         cargarDatosPaciente();
     }, [pacienteSeleccionadoId, pacientes]);
 
+    // Limpiar Formulario Anamnesis
     const limpiarFormularioAnamnesis = () => {
         setAntecedentesMorbidos(""); setAntecedentesMedicos("");
         setInformacionNutricional(""); setInformacionDeportiva(""); setObjetivos("");
     };
 
-    const limpiarFormularioFMS = () => {
-    setFmsData({
-        sentadillaProfunda: 0,
-        pasoValla: 0,
-        estocadaLinea: 0,
-        movilidadHombros: 0,
-        elevacionPiernaRecta: 0,
-        estabilidadTroncoFlexion: 0,
-        estabilidadRotatoria: 0,
-        notas: ""
-        });
-    };
+    // Limpiar Formulario Antropometria
     const limpiarFormularioAntropometria = () => {
         setAntropometria({
             peso: "", talla: "", diametroHumeral: "", diametroFemoral: "",
@@ -214,7 +352,69 @@ export default function EvaluacionesPage() {
         });
     };
 
-    // Obtener resultados calculados en tiempo real
+    // Limpiar Formulario FMS
+    const limpiarFormularioFMS = () => {
+    setFmsData({
+        sentadillaProfunda: 0,
+        pasoValla: 0,
+        estocadaLinea: 0,
+        movilidadHombros: 0,
+        elevacionPiernaRecta: 0,
+        estabilidadTroncoFlexion: 0,
+        estabilidadRotatoria: 0,
+        notas: ""
+        });
+    };
+
+    // Limpiar Formulario Salto Vertical
+    const limpiarFormularioSaltoVertical = () => {
+        setSaltoVerticalData({
+            cmj: "",
+            sj: "",
+            cmjB: "",
+            dropJump: "",
+            depthJump: "",
+            carreraCompleta: "",
+            notas: ""
+        });
+    };
+
+    // Limpiar Formulario Velocidad
+    const limpiarFormularioVelocidad = () => {
+        setVelocidadData({
+            tiempo10m: "",
+            tiempo40m: "",
+            notas: ""
+        });
+    };
+
+    // Limpiar Formulario Fuerza Maxima
+    const limpiarFormularioFuerza = () => {
+        setFuerzaData({
+            pesoMuerto: "",
+            sentadilla: "",
+            pressBanca: "",
+            notas: ""
+        });
+    };
+
+    // Limpiar Formulario Gasto Calorico
+    const limpiarFormularioNutricion = () => {
+        setNutricionData({
+            gastoBasal: "",
+            gastoEntrenamiento: "",
+            gastoDescanso: "",
+            proteinaEntrenamiento: "",
+            proteinaDescanso: "",
+            grasasEntrenamiento: "",
+            grasasDescanso: "",
+            carbohidratosEntrenamiento: "",
+            carbohidratosDescanso: "",
+            especificaciones: ""
+        });
+    };
+
+    // Obtener resultados calculados de Antropometria en tiempo real
     const parseNum = (v: string) => v !== "" ? parseFloat(v) : 0;
     const resultadosCalculados = pacienteActual ? calcularResultadosAntropometria({
         peso: parseNum(antropometria.peso),
@@ -235,23 +435,6 @@ export default function EvaluacionesPage() {
         pliegueMuslo: parseNum(antropometria.pliegueMuslo),
         pliegueGemelo: parseNum(antropometria.pliegueGemelo)
     }) : null;
-
-    // Guardar Anamnesis
-    const manejarGuardarAnamnesis = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
-
-        setGuardando(true);
-        const res = await guardarAnamnesis({
-            pacienteId: parseInt(pacienteSeleccionadoId),
-            antecedentesMorbidos, antecedentesMedicos,
-            informacionNutricional, informacionDeportiva, objetivos
-        });
-        setGuardando(false);
-
-        if (res.success) alert("¡Evaluación de Anamnesis (A3-1) guardada exitosamente!");
-        else alert(`Error al guardar: ${res.error}`);
-    };
 
     // Guardar Antropometría con resultados
     const manejarGuardarAntropometria = async (e: React.FormEvent) => {
@@ -305,6 +488,23 @@ export default function EvaluacionesPage() {
         if (res.success) alert("¡Evaluación Antropométrica (A3-2) guardada exitosamente!");
         else alert(`Error al guardar: ${res.error}`);
     };
+    
+    // Guardar Anamnesis
+    const manejarGuardarAnamnesis = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
+
+        setGuardando(true);
+        const res = await guardarAnamnesis({
+            pacienteId: parseInt(pacienteSeleccionadoId),
+            antecedentesMorbidos, antecedentesMedicos,
+            informacionNutricional, informacionDeportiva, objetivos
+        });
+        setGuardando(false);
+
+        if (res.success) alert("¡Evaluación de Anamnesis (A3-1) guardada exitosamente!");
+        else alert(`Error al guardar: ${res.error}`);
+    };
 
     // Función para generar e imprimir la ficha PDF resumen Amnesis
     const generarPDFResumen = () => {
@@ -318,6 +518,10 @@ export default function EvaluacionesPage() {
                 <head>
                     <title>Informe Antropométrico - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
                     <style>
+                        @page {
+                            size: auto;
+                            margin: 0mm;
+                        }
                         body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
                         h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 5px; }
                         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
@@ -361,6 +565,7 @@ export default function EvaluacionesPage() {
         `);
         ventanaPDF.document.close();
     };
+
     const manejarGuardarFMS = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
@@ -384,6 +589,7 @@ export default function EvaluacionesPage() {
     else alert(`Error al guardar: ${res.error}`);
 };
 
+    // Generar PDF FMS
     const generarPDFFMS = () => {
         if (!pacienteActual) return;
 
@@ -400,6 +606,10 @@ export default function EvaluacionesPage() {
                 <head>
                     <title>Informe FMS - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
                     <style>
+                        @page {
+                            size: auto;
+                            margin: 0mm;
+                        }
                         body { font-family: Arial, sans-serif; padding: 25px; color: #333; }
                         h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 6px; }
                         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
@@ -456,14 +666,403 @@ export default function EvaluacionesPage() {
         ventanaPDF.document.close();
     };
 
+    const manejarGuardarSaltoVertical = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
+
+    setGuardando(true);
+    const parseNum = (v: string) => v !== "" ? parseFloat(v) : null;
+
+    const res = await guardarSaltoVertical({
+        pacienteId: parseInt(pacienteSeleccionadoId),
+        cmj: parseNum(saltoVerticalData.cmj),
+        sj: parseNum(saltoVerticalData.sj),
+        cmjB: parseNum(saltoVerticalData.cmjB),
+        dropJump: parseNum(saltoVerticalData.dropJump),
+        depthJump: parseNum(saltoVerticalData.depthJump),
+        carreraCompleta: parseNum(saltoVerticalData.carreraCompleta),
+        notas: saltoVerticalData.notas
+    });
+        setGuardando(false);
+        if (res.success) alert("¡Evaluación de Salto Vertical (A3-4) guardada exitosamente!");
+        else alert(`Error al guardar: ${res.error}`);
+    };
+
+    // Generador de PDF Salto Vertical
+    const generarPDFSaltoVertical = () => {
+        if (!pacienteActual) return;
+
+        const ventanaPDF = window.open("", "_blank");
+        if (!ventanaPDF) return alert("Por favor permita las ventanas emergentes.");
+
+        ventanaPDF.document.write(`
+            <html>
+                <head>
+                    <title>Informe Salto Vertical - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <style>
+                        @page {
+                            size: auto;
+                            margin: 0mm;
+                        }
+                        body { font-family: Arial, sans-serif; padding: 25px; color: #333; }
+                        h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 6px; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; }
+                        th { background-color: #f1f5f9; color: #1e293b; }
+                        .val { font-weight: bold; font-size: 1.1rem; color: #0284c7; text-align: right; }
+                        @media print { button { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <button onclick="window.print()" style="background: #4f46e5; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px;">Imprimir / Guardar en PDF</button>
+                    
+                    <h1>Informe de Evaluación de Salto Vertical (A3-4)</h1>
+                    
+                    <div class="info-grid">
+                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
+                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prueba / Tipo de Salto</th>
+                                <th style="text-align: right; width: 180px;">Altura Registrada (cm)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>CMJ</strong> (Counter Movement Jump)</td><td class="val">${saltoVerticalData.cmj ? saltoVerticalData.cmj + ' cm' : '-'}</td></tr>
+                            <tr><td><strong>SJ</strong> (Squat Jump)</td><td class="val">${saltoVerticalData.sj ? saltoVerticalData.sj + ' cm' : '-'}</td></tr>
+                            <tr><td><strong>CMJ B</strong> (Counter Movement Jump con Brazos)</td><td class="val">${saltoVerticalData.cmjB ? saltoVerticalData.cmjB + ' cm' : '-'}</td></tr>
+                            <tr><td><strong>Drop Jump</strong></td><td class="val">${saltoVerticalData.dropJump ? saltoVerticalData.dropJump + ' cm' : '-'}</td></tr>
+                            <tr><td><strong>Depth Jump</strong></td><td class="val">${saltoVerticalData.depthJump ? saltoVerticalData.depthJump + ' cm' : '-'}</td></tr>
+                            <tr><td><strong>Carrera Completa</strong></td><td class="val">${saltoVerticalData.carreraCompleta ? saltoVerticalData.carreraCompleta + ' cm' : '-'}</td></tr>
+                        </tbody>
+                    </table>
+
+                    ${saltoVerticalData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${saltoVerticalData.notas}</p></div>` : ''}
+                </body>
+            </html>
+        `);
+        ventanaPDF.document.close();
+    };
+
+    const manejarGuardarVelocidad = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
+
+    setGuardando(true);
+    const parseNum = (v: string) => v !== "" ? parseFloat(v) : null;
+
+    const res = await guardarVelocidad({
+        pacienteId: parseInt(pacienteSeleccionadoId),
+        tiempo10m: parseNum(velocidadData.tiempo10m),
+        tiempo40m: parseNum(velocidadData.tiempo40m),
+        velocidad10m: parseNum(kmh10m),
+        velocidad40m: parseNum(kmh40m),
+        notas: velocidadData.notas
+    });
+        setGuardando(false);
+        if (res.success) alert("¡Evaluación de Velocidad (A3-5) guardada exitosamente!");
+        else alert(`Error al guardar: ${res.error}`);
+    };
+
+    // Generar PDF Velocidad
+    const generarPDFVelocidad = () => {
+        if (!pacienteActual) return;
+
+        const ventanaPDF = window.open("", "_blank");
+        if (!ventanaPDF) return alert("Por favor permita las ventanas emergentes.");
+
+        ventanaPDF.document.write(`
+            <html>
+                <head>
+                    <title>Informe Velocidad - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <style>
+                        @page { 
+                            size: auto; 
+                            margin: 0mm; 
+                        }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 20mm; 
+                            color: #333; 
+                        }
+                        h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 6px; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; }
+                        th { background-color: #f1f5f9; color: #1e293b; }
+                        .val { font-weight: bold; font-size: 1.1rem; color: #0284c7; text-align: center; }
+                        .speed { font-weight: bold; font-size: 1.1rem; color: #059669; text-align: center; }
+                        @media print { button { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <button onclick="window.print()" style="background: #4f46e5; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px;">Imprimir / Guardar en PDF</button>
+                    
+                    <h1>Informe de Evaluación de Velocidad (A3-5)</h1>
+                    
+                    <div class="info-grid">
+                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
+                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prueba de Velocidad</th>
+                                <th style="text-align: center; width: 180px;">Tiempo (s)</th>
+                                <th style="text-align: center; width: 180px;">Velocidad (Km/h)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>10 Metros</strong> (Aceleración)</td>
+                                <td class="val">${velocidadData.tiempo10m ? velocidadData.tiempo10m + ' s' : '-'}</td>
+                                <td class="speed">${velocidadData.tiempo10m ? kmh10m + ' Km/h' : '-'}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>40 Metros</strong> (Velocidad Máxima)</td>
+                                <td class="val">${velocidadData.tiempo40m ? velocidadData.tiempo40m + ' s' : '-'}</td>
+                                <td class="speed">${velocidadData.tiempo40m ? kmh40m + ' Km/h' : '-'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    ${velocidadData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${velocidadData.notas}</p></div>` : ''}
+                </body>
+            </html>
+        `);
+        ventanaPDF.document.close();
+    };
+
+    const manejarGuardarFuerzaMaxima = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
+
+    setGuardando(true);
+    const parseNum = (v: string) => v !== "" ? parseFloat(v) : null;
+
+    const res = await guardarFuerzaMaxima({
+        pacienteId: parseInt(pacienteSeleccionadoId),
+        pesoMuerto: parseNum(fuerzaData.pesoMuerto),
+        sentadilla: parseNum(fuerzaData.sentadilla),
+        pressBanca: parseNum(fuerzaData.pressBanca),
+        totalLevantado: parseFloat(totalLevantadoKg),
+        notas: fuerzaData.notas
+    });
+        setGuardando(false);
+        if (res.success) alert("¡Evaluación de Fuerza Máxima (A3-6) guardada exitosamente!");
+        else alert(`Error al guardar: ${res.error}`);
+    };
+
+    // Generar PDF Fuerza Maxima
+    const generarPDFFuerzaMaxima = () => {
+        if (!pacienteActual) return;
+
+        const ventanaPDF = window.open("", "_blank");
+        if (!ventanaPDF) return alert("Por favor permita las ventanas emergentes.");
+
+        ventanaPDF.document.write(`
+            <html>
+                <head>
+                    <title>Informe Fuerza Máxima - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <style>
+                        @page { 
+                            size: auto; 
+                            margin: 0mm; 
+                        }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 20mm; 
+                            color: #333; 
+                        }
+                        h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 6px; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; }
+                        th { background-color: #f1f5f9; color: #1e293b; }
+                        .val { font-weight: bold; font-size: 1.1rem; color: #0284c7; text-align: right; }
+                        .total-row { background-color: #f8fafc; font-weight: bold; }
+                        @media print { button { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <button onclick="window.print()" style="background: #4f46e5; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px;">Imprimir / Guardar en PDF</button>
+                    
+                    <h1>Informe de Evaluación de Fuerza Máxima (A3-6)</h1>
+                    
+                    <div class="info-grid">
+                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
+                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ejercicio / Levantamiento</th>
+                                <th style="text-align: right; width: 200px;">Carga Máxima (Kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Peso Muerto</strong></td><td class="val">${fuerzaData.pesoMuerto ? fuerzaData.pesoMuerto + ' Kg' : '-'}</td></tr>
+                            <tr><td><strong>Sentadilla</strong></td><td class="val">${fuerzaData.sentadilla ? fuerzaData.sentadilla + ' Kg' : '-'}</td></tr>
+                            <tr><td><strong>Press Banca</strong></td><td class="val">${fuerzaData.pressBanca ? fuerzaData.pressBanca + ' Kg' : '-'}</td></tr>
+                            <tr class="total-row">
+                                <td style="text-align: right;">TOTAL LEVANTADO:</td>
+                                <td class="val" style="color: #4f46e5; font-size: 1.2rem;">${totalLevantadoKg} Kg</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    ${fuerzaData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${fuerzaData.notas}</p></div>` : ''}
+                </body>
+            </html>
+        `);
+        ventanaPDF.document.close();
+    };
+
+    const manejarGuardarNutricion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!pacienteSeleccionadoId) return alert("Seleccione un paciente primero.");
+
+        setGuardando(true);
+        const parseNum = (v: string) => v !== "" ? parseFloat(v) : null;
+
+        const res = await guardarGastoCalorico({
+            pacienteId: parseInt(pacienteSeleccionadoId),
+            gastoBasal: parseNum(nutricionData.gastoBasal),
+            gastoEntrenamiento: parseNum(nutricionData.gastoEntrenamiento),
+            gastoDescanso: parseNum(nutricionData.gastoDescanso),
+            proteinaEntrenamiento: parseNum(nutricionData.proteinaEntrenamiento),
+            proteinaDescanso: parseNum(nutricionData.proteinaDescanso),
+            grasasEntrenamiento: parseNum(nutricionData.grasasEntrenamiento),
+            grasasDescanso: parseNum(nutricionData.grasasDescanso),
+            carbohidratosEntrenamiento: parseNum(nutricionData.carbohidratosEntrenamiento),
+            carbohidratosDescanso: parseNum(nutricionData.carbohidratosDescanso),
+            especificaciones: nutricionData.especificaciones
+        });
+        setGuardando(false);
+
+        if (res.success) alert("¡Evaluación de Gasto Calórico y Nutrición (A3-7) guardada exitosamente!");
+        else alert(`Error al guardar: ${res.error}`);
+    };
+
+    const generarPDFNutricion = () => {
+        if (!pacienteActual) return;
+
+        const ventanaPDF = window.open("", "_blank");
+        if (!ventanaPDF) return alert("Por favor permita las ventanas emergentes.");
+
+        ventanaPDF.document.write(`
+            <html>
+                <head>
+                    <title>Informe Nutricional - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <style>
+                        @page { 
+                            size: auto; 
+                            margin: 0mm; 
+                        }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 20mm; 
+                            color: #333; 
+                        }
+                        h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 6px; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                        .section-title { color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-top: 20px; margin-bottom: 12px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+                        th { background-color: #f1f5f9; color: #1e293b; }
+                        .val { font-weight: bold; font-size: 1.05rem; color: #0284c7; text-align: right; }
+                        .sub-val { font-weight: bold; color: #059669; text-align: right; }
+                        .box-spec { border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; background-color: #fafafa; white-space: pre-wrap; line-height: 1.5; }
+                        @media print { button { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <button onclick="window.print()" style="background: #4f46e5; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px;">Imprimir / Guardar en PDF</button>
+                    
+                    <h1>Informe de Gasto Calórico y Nutrición (A3-7)</h1>
+                    
+                    <div class="info-grid">
+                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
+                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
+                    </div>
+
+                    <h3 class="section-title">1. Gasto Calórico (kcal)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th style="text-align: right; width: 200px;">Calorías (kcal)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Gasto Calórico Basal</td><td class="val">${nutricionData.gastoBasal ? nutricionData.gastoBasal + ' kcal' : '-'}</td></tr>
+                            <tr><td>Gasto Calórico Día de Entrenamiento</td><td class="val">${nutricionData.gastoEntrenamiento ? nutricionData.gastoEntrenamiento + ' kcal' : '-'}</td></tr>
+                            <tr><td>Gasto Calórico Día de Descanso</td><td class="val">${nutricionData.gastoDescanso ? nutricionData.gastoDescanso + ' kcal' : '-'}</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="section-title">2. Distribución de Macronutrientes (Gramos)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Macronutriente</th>
+                                <th style="text-align: right; width: 180px;">Día Entrenamiento</th>
+                                <th style="text-align: right; width: 180px;">Día Descanso</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Proteína</strong></td>
+                                <td class="sub-val">${nutricionData.proteinaEntrenamiento ? nutricionData.proteinaEntrenamiento + ' g' : '-'}</td>
+                                <td class="sub-val">${nutricionData.proteinaDescanso ? nutricionData.proteinaDescanso + ' g' : '-'}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Grasas</strong></td>
+                                <td class="sub-val">${nutricionData.grasasEntrenamiento ? nutricionData.grasasEntrenamiento + ' g' : '-'}</td>
+                                <td class="sub-val">${nutricionData.grasasDescanso ? nutricionData.grasasDescanso + ' g' : '-'}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Carbohidratos</strong></td>
+                                <td class="sub-val">${nutricionData.carbohidratosEntrenamiento ? nutricionData.carbohidratosEntrenamiento + ' g' : '-'}</td>
+                                <td class="sub-val">${nutricionData.carbohidratosDescanso ? nutricionData.carbohidratosDescanso + ' g' : '-'}</td>
+                            </tr>
+                            <tr style="background-color: #f8fafc; font-weight: bold;">
+                                <td>Aporte Energético Total Calculado</td>
+                                <td style="text-align: right; color: #4f46e5;">${kcalMacrosEnt} kcal</td>
+                                <td style="text-align: right; color: #4f46e5;">${kcalMacrosDes} kcal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    ${nutricionData.especificaciones ? `
+                        <h3 class="section-title">3. Especificaciones e Indicaciones Nutricionales</h3>
+                        <div class="box-spec">${nutricionData.especificaciones}</div>
+                    ` : ''}
+                </body>
+            </html>
+        `);
+        ventanaPDF.document.close();
+    };
+
+
     const evaluacionesList = [
         { id: 1, nombre: "A3-1: Anamnesis" },
         { id: 2, nombre: "A3-2: Antropometría" },
         { id: 3, nombre: "A3-3: Movimiento(FMS)" },
-        { id: 4, nombre: "Evaluación 4" },
-        { id: 5, nombre: "Evaluación 5" },
-        { id: 6, nombre: "Evaluación 6" },
-        { id: 7, nombre: "Evaluación 7" }
+        { id: 4, nombre: "A3-4: Salto Vertical" },
+        { id: 5, nombre: "A3-5: Velocidad" },
+        { id: 6, nombre: "A3-6: Fuerza Maxima" },
+        { id: 7, nombre: "A3-7: Gasto Calorico" }
     ];
 
     return (
@@ -854,12 +1453,435 @@ export default function EvaluacionesPage() {
                                         </form>
                                     </div>
                                 )}
-                                {evaluacionActiva > 3 && (
+
+                                {/* EVALUACIÓN 4: SALTO VERTICAL */}
+                                {evaluacionActiva === 4 && (
+                                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cbd5e0', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>
+                                            <h2 style={{ margin: 0, color: '#2d3748' }}>Evaluación de Salto Vertical (A3-4)</h2>
+                                            <button type="button" onClick={generarPDFSaltoVertical} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.5rem 1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                📄 Generar Reporte PDF
+                                            </button>
+                                        </div>
+
+                                        <form onSubmit={manejarGuardarSaltoVertical} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>🦵 Altura de Saltos (en cm)</h3>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
+                                                    {[
+                                                        { campo: 'cmj', label: 'CMJ (Counter Movement Jump)' },
+                                                        { campo: 'sj', label: 'SJ (Squat Jump)' },
+                                                        { campo: 'cmjB', label: 'CMJ B (Con uso de brazos)' },
+                                                        { campo: 'dropJump', label: 'Drop Jump' },
+                                                        { campo: 'depthJump', label: 'Depth Jump' },
+                                                        { campo: 'carreraCompleta', label: 'Carrera Completa' }
+                                                    ].map((item) => (
+                                                        <div key={item.campo} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                            <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>{item.label}</label>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    value={(saltoVerticalData as any)[item.campo]}
+                                                                    onChange={(e) => manejarCambioSaltoVertical(item.campo, e.target.value)}
+                                                                    placeholder="0.00"
+                                                                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                                />
+                                                                <span style={{ fontWeight: 'bold', color: '#718096' }}>cm</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* NOTAS ADICIONALES */}
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <label style={{ fontWeight: 'bold', color: '#4a5568', display: 'block', marginBottom: '0.5rem' }}>Notas / Observaciones de Salto Vertical</label>
+                                                <textarea
+                                                    value={saltoVerticalData.notas}
+                                                    onChange={(e) => manejarCambioSaltoVertical('notas', e.target.value)}
+                                                    placeholder="Detalles sobre plataforma de salto usada, fatiga, técnica..."
+                                                    rows={3}
+                                                    style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e0', color: '#333' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button type="submit" disabled={guardando} style={{ backgroundColor: '#10b981', color: '#ffffff', padding: '0.8rem 2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}>
+                                                    {guardando ? "Guardando Salto Vertical..." : "Guardar Evaluación de Salto Vertical"}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+
+                                {/* EVALUACIÓN 5: VELOCIDAD */}
+                                {evaluacionActiva === 5 && (
+                                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cbd5e0', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>
+                                            <h2 style={{ margin: 0, color: '#2d3748' }}>Evaluación de Velocidad (A3-5)</h2>
+                                            <button type="button" onClick={generarPDFVelocidad} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.5rem 1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                📄 Generar Reporte PDF
+                                            </button>
+                                        </div>
+
+                                        <form onSubmit={manejarGuardarVelocidad} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>⏱️ Registro de Tiempos y Conversión</h3>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                                    
+                                                    {/* TEST 10 METROS */}
+                                                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '1rem', color: '#1e293b', display: 'block', marginBottom: '0.5rem' }}>
+                                                            10 Metros (Aceleración)
+                                                        </label>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                            <div>
+                                                                <label style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>Tiempo en Segundos:</label>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={velocidadData.tiempo10m}
+                                                                        onChange={(e) => manejarCambioVelocidad('tiempo10m', e.target.value)}
+                                                                        placeholder="0.00"
+                                                                        style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                                    />
+                                                                    <span style={{ fontWeight: 'bold', color: '#718096' }}>seg</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ background: '#ecfdf5', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                                                                <span style={{ fontSize: '0.85rem', color: '#047857', fontWeight: 'bold' }}>Velocidad Calculada:</span>
+                                                                <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#059669' }}>
+                                                                    {kmh10m} <span style={{ fontSize: '0.9rem' }}>Km/h</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* TEST 40 METROS */}
+                                                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '1rem', color: '#1e293b', display: 'block', marginBottom: '0.5rem' }}>
+                                                            40 Metros (Velocidad Máxima)
+                                                        </label>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                            <div>
+                                                                <label style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>Tiempo en Segundos:</label>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={velocidadData.tiempo40m}
+                                                                        onChange={(e) => manejarCambioVelocidad('tiempo40m', e.target.value)}
+                                                                        placeholder="0.00"
+                                                                        style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                                    />
+                                                                    <span style={{ fontWeight: 'bold', color: '#718096' }}>seg</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ background: '#ecfdf5', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                                                                <span style={{ fontSize: '0.85rem', color: '#047857', fontWeight: 'bold' }}>Velocidad Calculada:</span>
+                                                                <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#059669' }}>
+                                                                    {kmh40m} <span style={{ fontSize: '0.9rem' }}>Km/h</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+                                            {/* NOTAS ADICIONALES */}
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <label style={{ fontWeight: 'bold', color: '#4a5568', display: 'block', marginBottom: '0.5rem' }}>Notas / Observaciones de la Prueba</label>
+                                                <textarea
+                                                    value={velocidadData.notas}
+                                                    onChange={(e) => manejarCambioVelocidad('notas', e.target.value)}
+                                                    placeholder="Tipo de calzado, superficie, condiciones del viento, etc..."
+                                                    rows={3}
+                                                    style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e0', color: '#333' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button type="submit" disabled={guardando} style={{ backgroundColor: '#10b981', color: '#ffffff', padding: '0.8rem 2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}>
+                                                    {guardando ? "Guardando Velocidad..." : "Guardar Evaluación de Velocidad"}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+
+                                {/* EVALUACIÓN 6: FUERZA MÁXIMA */}
+                                {evaluacionActiva === 6 && (
+                                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cbd5e0', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>
+                                            <h2 style={{ margin: 0, color: '#2d3748' }}>Evaluación de Fuerza Máxima (A3-6)</h2>
+                                            <button type="button" onClick={generarPDFFuerzaMaxima} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.5rem 1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                📄 Generar Reporte PDF
+                                            </button>
+                                        </div>
+
+                                        <form onSubmit={manejarGuardarFuerzaMaxima} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>🏋️ Cargas Máximas Levantadas (en Kg)</h3>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
+                                                    {[
+                                                        { campo: 'pesoMuerto', label: 'Peso Muerto' },
+                                                        { campo: 'sentadilla', label: 'Sentadilla' },
+                                                        { campo: 'pressBanca', label: 'Press Banca' }
+                                                    ].map((item) => (
+                                                        <div key={item.campo} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                            <label style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#4a5568' }}>{item.label}</label>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.5"
+                                                                    value={(fuerzaData as any)[item.campo]}
+                                                                    onChange={(e) => manejarCambioFuerza(item.campo, e.target.value)}
+                                                                    placeholder="0.0"
+                                                                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                                />
+                                                                <span style={{ fontWeight: 'bold', color: '#718096' }}>Kg</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* RESUMEN TOTAL EN VIVO */}
+                                                <div style={{ marginTop: '1.5rem', background: '#f1f5f9', padding: '1rem', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '1rem' }}>Total Levantado (Suma):</span>
+                                                    <span style={{ fontWeight: 'bold', color: '#4f46e5', fontSize: '1.4rem' }}>{totalLevantadoKg} Kg</span>
+                                                </div>
+                                            </div>
+
+                                            {/* NOTAS ADICIONALES */}
+                                            <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                                <label style={{ fontWeight: 'bold', color: '#4a5568', display: 'block', marginBottom: '0.5rem' }}>Notas / Observaciones de Fuerza</label>
+                                                <textarea
+                                                    value={fuerzaData.notas}
+                                                    onChange={(e) => manejarCambioFuerza('notas', e.target.value)}
+                                                    placeholder="Detalles sobre RPE, repeticiones estimadas o cálculo de 1RM directo..."
+                                                    rows={3}
+                                                    style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid #cbd5e0', color: '#333' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button type="submit" disabled={guardando} style={{ backgroundColor: '#10b981', color: '#ffffff', padding: '0.8rem 2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}>
+                                                    {guardando ? "Guardando Fuerza Máxima..." : "Guardar Evaluación de Fuerza Máxima"}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+
+                                {/* EVALUACIÓN 7: GASTO CALÓRICO Y NUTRICIÓN */}
+                                {evaluacionActiva === 7 && (
+                                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cbd5e0', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>
+                                            <h2 style={{ margin: 0, color: '#2d3748' }}>Gasto Calórico – Nutrición (A3-7)</h2>
+                                            <button type="button" onClick={generarPDFNutricion} style={{ backgroundColor: '#0284c7', color: '#ffffff', padding: '0.5rem 1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                                📄 Generar Reporte PDF
+                                            </button>
+                                        </div>
+
+                                        <form onSubmit={manejarGuardarNutricion} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            
+                                            {/* RECUADRO GRANDES 1: GASTO CALÓRICO */}
+                                            <div style={{ background: '#ffffff', padding: '1.2rem', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
+                                                <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>🔥 1. Gasto Calórico (kcal)</h3>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.2rem' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Gasto calórico basal</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="1"
+                                                                value={nutricionData.gastoBasal}
+                                                                onChange={(e) => manejarCambioNutricion('gastoBasal', e.target.value)}
+                                                                placeholder="0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>kcal</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Gasto calórico día de entrenamiento</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="1"
+                                                                value={nutricionData.gastoEntrenamiento}
+                                                                onChange={(e) => manejarCambioNutricion('gastoEntrenamiento', e.target.value)}
+                                                                placeholder="0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>kcal</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Gasto calórico día de descanso</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="1"
+                                                                value={nutricionData.gastoDescanso}
+                                                                onChange={(e) => manejarCambioNutricion('gastoDescanso', e.target.value)}
+                                                                placeholder="0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>kcal</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* RECUADRO GRANDE 2: MACRONUTRIENTES */}
+                                            <div style={{ background: '#ffffff', padding: '1.2rem', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
+                                                <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>🥗 2. Macronutrientes a Consumir (Gramos)</h3>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.2rem' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Proteína (Entrenamiento)</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                value={nutricionData.proteinaEntrenamiento}
+                                                                onChange={(e) => manejarCambioNutricion('proteinaEntrenamiento', e.target.value)}
+                                                                placeholder="0.0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>g</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Proteína (Descanso)</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                value={nutricionData.proteinaDescanso}
+                                                                onChange={(e) => manejarCambioNutricion('proteinaDescanso', e.target.value)}
+                                                                placeholder="0.0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>g</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Grasas (Entrenamiento)</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                value={nutricionData.grasasEntrenamiento}
+                                                                onChange={(e) => manejarCambioNutricion('grasasEntrenamiento', e.target.value)}
+                                                                placeholder="0.0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>g</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Grasas (Descanso)</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                value={nutricionData.grasasDescanso}
+                                                                onChange={(e) => manejarCambioNutricion('grasasDescanso', e.target.value)}
+                                                                placeholder="0.0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>g</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Carbohidratos (Entrenamiento)</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                value={nutricionData.carbohidratosEntrenamiento}
+                                                                onChange={(e) => manejarCambioNutricion('carbohidratosEntrenamiento', e.target.value)}
+                                                                placeholder="0.0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>g</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Carbohidratos (Descanso)</label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                value={nutricionData.carbohidratosDescanso}
+                                                                onChange={(e) => manejarCambioNutricion('carbohidratosDescanso', e.target.value)}
+                                                                placeholder="0.0"
+                                                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333' }}
+                                                            />
+                                                            <span style={{ fontWeight: 'bold', color: '#718096' }}>g</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* RESUMEN DE ENERGÍA MACROS */}
+                                                <div style={{ marginTop: '1.2rem', padding: '0.8rem 1rem', background: '#ecfdf5', borderRadius: '6px', border: '1px solid #a7f3d0', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                                                    <div>
+                                                        <span style={{ fontSize: '0.85rem', color: '#047857', fontWeight: 'bold' }}>Aporte kcal Días Entrenamiento:</span>
+                                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#059669' }}>{kcalMacrosEnt} kcal</div>
+                                                    </div>
+                                                    <div>
+                                                        <span style={{ fontSize: '0.85rem', color: '#047857', fontWeight: 'bold' }}>Aporte kcal Días Descanso:</span>
+                                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#059669' }}>{kcalMacrosDes} kcal</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* RECUADRO GRANDE 3: ESPECIFICACIONES Y NOTAS LIBRES */}
+                                            <div style={{ background: '#ffffff', padding: '1.2rem', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
+                                                <h3 style={{ margin: '0 0 0.8rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>📝 3. Especificaciones Nutricionales</h3>
+                                                <textarea
+                                                    value={nutricionData.especificaciones}
+                                                    onChange={(e) => manejarCambioNutricion('especificaciones', e.target.value)}
+                                                    placeholder="Escribe aquí las pautas específicas, horarios de comidas, hidratación, suplementación recomendada, etc..."
+                                                    rows={6}
+                                                    style={{ width: '100%', padding: '1rem', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '1rem', color: '#333', lineHeight: '1.5' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button type="submit" disabled={guardando} style={{ backgroundColor: '#10b981', color: '#ffffff', padding: '0.8rem 2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}>
+                                                    {guardando ? "Guardando Nutrición..." : "Guardar Evaluación Nutricional"}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+
+                                {evaluacionActiva > 7 && (
                                     <div style={{ background: '#f8fafc', padding: '3rem', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
                                         <h3 style={{ color: '#718096', margin: 0 }}>Módulo en construcción</h3>
                                         <p style={{ color: '#a0aec0' }}>Próximamente agregaremos los campos correspondientes para esta evaluación clínica.</p>
                                     </div>
                                 )}
+
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: '#f7fafc', borderRadius: '8px', border: '1px dashed #cbd5e0' }}>

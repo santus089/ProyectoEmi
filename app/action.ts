@@ -284,3 +284,162 @@ export async function obtenerFMSPaciente(pacienteId: number) {
     return { success: false, error: err.message, data: [] };
   }
 }
+
+// Guardar Evaluación de Salto Vertical
+export async function guardarSaltoVertical(datos: {
+  pacienteId: number;
+  cmj?: number | null;
+  sj?: number | null;
+  cmjB?: number | null;
+  dropJump?: number | null;
+  depthJump?: number | null;
+  carreraCompleta?: number | null;
+  notas?: string;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionSaltoVertical')
+      .insert([datos])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Obtener historial de Salto Vertical de un paciente
+export async function obtenerSaltoVerticalPaciente(pacienteId: number) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionSaltoVertical')
+      .select('*')
+      .eq('pacienteId', pacienteId)
+      .order('fecha', { ascending: false });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+// Guardar Evaluación de Velocidad
+export async function guardarVelocidad(datos: {
+  pacienteId: number;
+  tiempo10m?: number | null;
+  tiempo40m?: number | null;
+  velocidad10m?: number | null;
+  velocidad40m?: number | null;
+  notas?: string;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionVelocidad')
+      .insert([datos])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Obtener historial de Velocidad de un paciente
+export async function obtenerVelocidadPaciente(pacienteId: number) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionVelocidad')
+      .select('*')
+      .eq('pacienteId', pacienteId)
+      .order('fecha', { ascending: false });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+// Guardar Evaluación de Fuerza Máxima
+export async function guardarFuerzaMaxima(datos: {
+  pacienteId: number;
+  pesoMuerto?: number | null;
+  sentadilla?: number | null;
+  pressBanca?: number | null;
+  totalLevantado?: number | null;
+  notas?: string;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionFuerzaMaxima')
+      .insert([datos])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Obtener historial de Fuerza Máxima de un paciente
+export async function obtenerFuerzaMaximaPaciente(pacienteId: number) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionFuerzaMaxima')
+      .select('*')
+      .eq('pacienteId', pacienteId)
+      .order('fecha', { ascending: false });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+// Guardar Evaluación de Gasto Calórico y Nutrición
+export async function guardarGastoCalorico(datos: {
+  pacienteId: number;
+  gastoBasal?: number | null;
+  gastoEntrenamiento?: number | null;
+  gastoDescanso?: number | null;
+  proteinaEntrenamiento?: number | null;
+  proteinaDescanso?: number | null;
+  grasasEntrenamiento?: number | null;
+  grasasDescanso?: number | null;
+  carbohidratosEntrenamiento?: number | null;
+  carbohidratosDescanso?: number | null;
+  especificaciones?: string;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionGastoCalorico')
+      .insert([datos])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Obtener historial de Gasto Calórico de un paciente
+export async function obtenerGastoCaloricoPaciente(pacienteId: number) {
+  try {
+    const { data, error } = await supabase
+      .from('EvaluacionGastoCalorico')
+      .select('*')
+      .eq('pacienteId', pacienteId)
+      .order('fecha', { ascending: false });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
