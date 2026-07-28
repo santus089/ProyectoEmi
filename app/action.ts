@@ -163,6 +163,44 @@ export async function borrarPaciente(id: number) {
   }
 }
 
+// Actualizar cita existente
+export async function actualizarCita(id: number, datos: any) {
+  try {
+    const { data, error } = await supabase
+      .from('Cita') // Asegúrate de que el nombre de tu tabla sea exactamente 'Cita'
+      .update({
+        pacienteId: datos.pacienteId,
+        fecha: datos.fecha,
+        hora: datos.hora,
+        horaFin: datos.horaFin,
+        modalidad: datos.modalidad,
+        motivo: datos.motivo
+      })
+      .eq('id', id)
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error al actualizar la cita' };
+  }
+}
+
+// Borrar cita
+export async function borrarCita(id: number) {
+  try {
+    const { error } = await supabase
+      .from('Cita')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error al eliminar la cita' };
+  }
+}
+
 //Guardar o actualizar la Anamnesis de un paciente
 export async function guardarAnamnesis(datos: {
   pacienteId: number;

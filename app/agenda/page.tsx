@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import '@/app/estilos/main.css';
 import '@/app/globals.css';
 import '@/app/estilos/pacientes.css'; 
-import { guardarCita, obtenerCitas, obtenerPaciente } from '../action';
+import { guardarCita, obtenerCitas, obtenerPaciente, actualizarCita, borrarCita } from '../action';
 
 export default function AgendaMensualPage() {
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -18,12 +18,16 @@ export default function AgendaMensualPage() {
     const [fechaActual, setFechaActual] = useState(new Date());
     const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
 
+    // --- ESTADOS DE EDICIÓN ---
+    const [modoEdicion, setModoEdicion] = useState(false);
+    const [idCitaAEditar, setIdCitaAEditar] = useState<number | null>(null);
+
     // Estados del formulario de reserva
     const [pacienteId, setPacienteId] = useState("");
     const [fecha, setFecha] = useState("");
     const [hora, setHora] = useState("");
     const [horaFin, setHoraFin] = useState("");
-    const [modalidad, setModalidad] = useState("");
+    const [modalidad, setModalidad] = useState("presencial");
     const [motivo, setMotivo] = useState("");
     const [guardando, setGuardando] = useState(false);
 
@@ -42,7 +46,7 @@ export default function AgendaMensualPage() {
         const partes = fechaIso.split('-');
         if (partes.length !== 3) return fechaIso;
         return `${partes[2]}/${partes[1]}/${partes[0]}`;
-    }
+    };
 
     useEffect(() => {
         cargarDatos();
@@ -56,10 +60,8 @@ export default function AgendaMensualPage() {
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ];
-    // Empezamos por Lunes para una disposición clínica tradicional
     const diasSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-    // Ajustamos el día de inicio para que calce con la semana Chilena (Lunes = 0)
     const obtenerPrimerDiaSemana = () => {
         const d = new Date(año, mes, 1).getDay();
         return d === 0 ? 6 : d - 1; 
@@ -71,37 +73,86 @@ export default function AgendaMensualPage() {
     const navegarMes = (direccion: 'ant' | 'sig') => {
         const nuevoMes = direccion === 'ant' ? mes - 1 : mes + 1;
         setFechaActual(new Date(año, nuevoMes, 1));
-        setDiaSeleccionado(null); // Limpiamos el filtro al cambiar de mes
+        setDiaSeleccionado(null);
     };
 
-    // Formateador estándar "YYYY-MM-DD" seguro para Supabase
     const construirFechaCelda = (dia: number) => {
         const m = String(mes + 1).padStart(2, '0');
         const d = String(dia).padStart(2, '0');
         return `${año}-${m}-${d}`;
     };
 
-    // Obtener las citas del día seleccionado para el bloque de detalles inferior
     const citasDelDiaSeleccionado = citas.filter(c => c.fecha === diaSeleccionado)
-        .sort((a, b) => a.hora.localeCompare(b.hora));
+        .sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
+
+    // --- MANEJADORES DE FORMULARIO Y EDICIÓN ---
+    const abrirNuevaCita = () => {
+        setModoEdicion(false);
+        setIdCitaAEditar(null);
+        setPacienteId("");
+        setFecha(diaSeleccionado || fechaHoyString);
+        setHora("");
+        setHoraFin("");
+        setModalidad("presencial");
+        setMotivo("");
+        setMostrarFormulario(true);
+    };
+
+    const abrirEditorCita = (cita: any) => {
+        setModoEdicion(true);
+        setIdCitaAEditar(cita.id);
+        setPacienteId(cita.pacienteId || cita.Paciente?.id || "");
+        setFecha(cita.fecha || "");
+        setHora(cita.hora ? cita.hora.substring(0, 5) : "");
+        setHoraFin(cita.horaFin ? cita.horaFin.substring(0, 5) : "");
+        setModalidad(cita.modalidad || "presencial");
+        setMotivo(cita.motivo || "");
+        setMostrarFormulario(true);
+    };
+
+    const cerrarModal = () => {
+        setMostrarFormulario(false);
+        setModoEdicion(false);
+        setIdCitaAEditar(null);
+    };
 
     async function manejarEnvio(e: React.FormEvent) {
         e.preventDefault();
         setGuardando(true);
 
         const datosCita = { pacienteId, fecha, hora, horaFin, modalidad, motivo };
-        const resultado = await guardarCita(datosCita);
+        let resultado;
+
+        if (modoEdicion && idCitaAEditar !== null) {
+            resultado = await actualizarCita(idCitaAEditar, datosCita);
+        } else {
+            resultado = await guardarCita(datosCita);
+        }
+
         setGuardando(false);
 
         if (resultado.success) {
-            alert("¡Hora agendada exitosamente en el calendario!");
-            setPacienteId(""); setFecha(""); setHora(""); setMotivo("");
-            setMostrarFormulario(false);
+            alert(modoEdicion ? "¡Cita actualizada exitosamente!" : "¡Hora agendada exitosamente en el calendario!");
+            setPacienteId(""); setFecha(""); setHora(""); setHoraFin(""); setMotivo("");
+            cerrarModal();
             cargarDatos();
         } else {
             alert(`Error: ${resultado.error}`);
         }
     }
+
+    const manejarBorrarCita = async (id: number, nombrePaciente: string) => {
+        const confirmar = window.confirm(`¿Estás seguro de eliminar la cita de ${nombrePaciente}?`);
+        if (confirmar) {
+            const resultado = await borrarCita(id);
+            if (resultado.success) {
+                alert("¡Cita eliminada correctamente!");
+                cargarDatos();
+            } else {
+                alert(`Error al eliminar la cita: ${resultado.error}`);
+            }
+        }
+    };
 
     return (
         <main className="main-layout" style={{ minHeight: '100vh', display: 'flex' }}>
@@ -113,38 +164,34 @@ export default function AgendaMensualPage() {
                         {/* Control superior */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
                             <h1 style={{ margin: 0, fontSize: '1.6rem', color: '#1a202c', fontWeight: 'bold' }}>Planificación Mensual</h1>
-                            <button onClick={() => setMostrarFormulario(true)} style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '0.6rem 1.2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>
+                            <button onClick={abrirNuevaCita} style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '0.6rem 1.2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>
                                 + Nueva Cita
                             </button>
                         </div>
 
-                        {/* --- NAVEGADOR DEL MES --- */}
+                        {/* NAVEGADOR DEL MES */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                             <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#2d3748', fontWeight: '600' }}>
                                 {nombresMeses[mes]} de {año}
                             </h2>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button onClick={() => navegarMes('ant')} style={{ padding: '0.4rem 0.8rem', border: '1px solid #cbd5e0', background: '#3a3737', borderRadius: '4px', cursor: 'pointer' }}>◀ Mes Anterior</button>
-                                <button onClick={() => setFechaActual(new Date())} style={{ padding: '0.4rem 0.8rem', border: '1px solid #cbd5e0', background: '#137333', borderRadius: '4px', cursor: 'pointer', fontWeight: '500' }}>Mes Actual</button>
-                                <button onClick={() => navegarMes('sig')} style={{ padding: '0.4rem 0.8rem', border: '1px solid #cbd5e0', background: '#3a3737', borderRadius: '4px', cursor: 'pointer' }}>Siguiente Mes ▶</button>
+                                <button onClick={() => navegarMes('ant')} style={{ padding: '0.4rem 0.8rem', border: '1px solid #cbd5e0', background: '#3a3737', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>◀ Mes Anterior</button>
+                                <button onClick={() => setFechaActual(new Date())} style={{ padding: '0.4rem 0.8rem', border: '1px solid #cbd5e0', background: '#137333', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: '500' }}>Mes Actual</button>
+                                <button onClick={() => navegarMes('sig')} style={{ padding: '0.4rem 0.8rem', border: '1px solid #cbd5e0', background: '#3a3737', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>Siguiente Mes ▶</button>
                             </div>
                         </div>
 
-                        {/* --- CUADRÍCULA DEL CALENDARIO --- */}
+                        {/* CUADRÍCULA DEL CALENDARIO */}
                         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#f7fafc' }}>
-                            {/* Días de la semana */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#edf2f7', borderBottom: '1px solid #e2e8f0', gap: '1px', textAlign: 'center', fontWeight: 'bold', padding: '0.75rem 0', color: '#4a5568' }}>
                                 {diasSemana.map(d => <div key={d}>{d}</div>)}
                             </div>
 
-                            {/* Días del mes */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', background: '#e2e8f0' }}>
-                                {/* Rellenos de meses anteriores */}
                                 {Array.from({ length: primerDiaMesIndex }).map((_, i) => (
                                     <div key={`vacio-${i}`} style={{ background: '#fff', minHeight: '6rem' }}></div>
                                 ))}
 
-                                {/* Días activos */}
                                 {Array.from({ length: totalDiasMes }).map((_, i) => {
                                     const dia = i + 1;
                                     const fechaCelda = construirFechaCelda(dia);
@@ -152,8 +199,7 @@ export default function AgendaMensualPage() {
                                     const citasDelDia = citas.filter(c => c.fecha === fechaCelda);
                                     const totalCitas = citasDelDia.length;
                                     const esSeleccionado = diaSeleccionado === fechaCelda;
-
-                                    const esHoy = fechaHoyString === fechaCelda
+                                    const esHoy = fechaHoyString === fechaCelda;
 
                                     return (
                                         <div 
@@ -173,7 +219,7 @@ export default function AgendaMensualPage() {
                                                 border: esSeleccionado ? '2px solid #4f46e5' : 'none'
                                             }}
                                             onMouseEnter={(e) => !esSeleccionado && (e.currentTarget.style.background = '#f7fafc')}
-                                            onMouseLeave={(e) => !esSeleccionado && (e.currentTarget.style.background = '#ffffff')}
+                                            onMouseLeave={(e) => !esSeleccionado && (e.currentTarget.style.background = esHoy ? '#e6f4ea' : '#ffffff')}
                                         >
                                             <span style={{ 
                                                 fontWeight: 'bold', 
@@ -183,7 +229,6 @@ export default function AgendaMensualPage() {
                                                 {dia}
                                             </span>
                                             
-                                            {/* Etiqueta resumen de citas dentro de la celda */}
                                             {totalCitas > 0 && (
                                                 <div style={{ 
                                                     backgroundColor: '#4f46e5', 
@@ -204,7 +249,7 @@ export default function AgendaMensualPage() {
                             </div>
                         </div>
 
-                        {/* --- PANEL INFERIOR: DETALLE DE CITAS DEL DÍA SELECCIONADO --- */}
+                        {/* PANEL INFERIOR: DETALLE Y ACCIONES DE CITAS */}
                         {diaSeleccionado && (
                             <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
@@ -216,19 +261,61 @@ export default function AgendaMensualPage() {
                                     <p style={{ color: '#718096', fontStyle: 'italic', margin: 0 }}>No hay horas agendadas para esta fecha.</p>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {citasDelDiaSeleccionado.map((cita) => (
-                                            <div key={cita.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#fff', borderRadius: '6px', border: '1px solid #edf2f7' }}>
-                                                <div>
-                                                    <span style={{ fontWeight: 'bold', color: '#4f46e5', marginRight: '1rem' }}>{cita.hora.substring(0,5)} hrs</span>
-                                                    <span style={{ fontWeight: 'bold', color: '#4f46e5', marginRight: '1rem' }}>{cita.horaFin.substring(0,5)} hrs</span>
-                                                    <strong style={{ color: '#2d3748' }}>{cita.Paciente?.nombre} {cita.Paciente?.apellido}</strong>
-                                                    <span style={{ color: '#718096', marginLeft: '1rem', fontSize: '0.9rem' }}>- Motivo: {cita.motivo}</span>
+                                        {citasDelDiaSeleccionado.map((cita) => {
+                                            const nombrePaciente = cita.Paciente ? `${cita.Paciente.nombre} ${cita.Paciente.apellido}` : 'Paciente no especificado';
+                                            const esRealizado = (cita.estado || "Pendiente").toLowerCase() === "realizado";
+
+                                            return (
+                                                <div key={cita.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#fff', borderRadius: '6px', border: '1px solid #edf2f7' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                        <span style={{ fontWeight: 'bold', color: '#4f46e5' }}>
+                                                            {cita.hora ? cita.hora.substring(0,5) : '--:--'} - {cita.horaFin ? cita.horaFin.substring(0,5) : '--:--'} hrs
+                                                        </span>
+                                                        <strong style={{ color: '#2d3748' }}>{nombrePaciente}</strong>
+                                                        <span style={{ color: '#718096', fontSize: '0.9rem' }}>- Motivo: {cita.motivo}</span>
+                                                        
+                                                        {/* Etiqueta Estado */}
+                                                        <span style={{ 
+                                                            backgroundColor: esRealizado ? '#def7ec' : '#feecdc', 
+                                                            color: esRealizado ? '#03543f' : '#9a3412', 
+                                                            fontSize: '0.75rem', 
+                                                            padding: '0.2rem 0.6rem', 
+                                                            borderRadius: '12px', 
+                                                            fontWeight: 'bold' 
+                                                        }}>
+                                                            {cita.estado || 'Pendiente'}
+                                                        </span>
+                                                        <span style={{ 
+                                                            backgroundColor: cita.modalidad === 'remota' ? '#e0e7ff' : '#def7ec', 
+                                                            color: cita.modalidad === 'remota' ? '#3730a3' : '#460354', 
+                                                            fontSize: '0.75rem', 
+                                                            padding: '0.2rem 0.6rem', 
+                                                            borderRadius: '12px', 
+                                                            fontWeight: 'bold',
+                                                            textTransform: 'capitalize'
+                                                        }}>
+                                                            {cita.modalidad || 'Presencial'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* BOTONES DE EDITAR Y BORRAR */}
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <button 
+                                                            onClick={() => abrirEditorCita(cita)}
+                                                            style={{ backgroundColor: '#f0a500', color: '#ffffff', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => manejarBorrarCita(cita.id, nombrePaciente)}
+                                                            style={{ backgroundColor: '#d9534f', color: '#ffffff', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                        >
+                                                            Borrar
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <span style={{ backgroundColor: '#def7ec', color: '#03543f', fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '12px', fontWeight: 'bold' }}>
-                                                    {cita.estado}
-                                                </span>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -238,13 +325,13 @@ export default function AgendaMensualPage() {
                 </div>
             </div>
 
-            {/* Modal de Agendamiento */}
+            {/* Modal de Agendamiento / Edición */}
             {mostrarFormulario && (
                 <div className='modal-overlay'>
                     <div className='modal-form-card'>
                         <div className='modal-header'>
-                            <h2>Agendar Nueva Hora</h2>
-                            <button type='button' className="btn-cerrar-x" onClick={() => setMostrarFormulario(false)}>&times;</button>
+                            <h2>{modoEdicion ? "Editar Cita" : "Agendar Nueva Hora"}</h2>
+                            <button type='button' className="btn-cerrar-x" onClick={cerrarModal}>&times;</button>
                         </div>
                         <form onSubmit={manejarEnvio} className="paciente-form">
                             <div className='form-group'>
@@ -256,6 +343,7 @@ export default function AgendaMensualPage() {
                                     ))}
                                 </select>
                             </div>
+
                             <div className='form-row'>
                                 <div className='form-group'>
                                     <label>Fecha</label>
@@ -271,7 +359,6 @@ export default function AgendaMensualPage() {
                                 </div>
                             </div>
 
-                            {/*MODALIDAD Y MOTIVO */}
                             <div className='form-row'>
                                 <div className='form-group'>
                                     <label>Modalidad de Sesión</label>
@@ -285,10 +372,11 @@ export default function AgendaMensualPage() {
                                     <input type="text" placeholder="Ej: Control nutricional" value={motivo} onChange={(e) => setMotivo(e.target.value)} required />
                                 </div>
                             </div>
+
                             <div className='form-action'>
-                                <button type='button' className='btn-cancelar' onClick={() => setMostrarFormulario(false)}>Cancelar</button>
+                                <button type='button' className='btn-cancelar' onClick={cerrarModal}>Cancelar</button>
                                 <button type='submit' className='btn-guardar' disabled={guardando}>
-                                    {guardando ? "Agendando..." : "Confirmar Hora"}
+                                    {guardando ? "Guardando..." : modoEdicion ? "Actualizar Cita" : "Confirmar Hora"}
                                 </button>
                             </div>
                         </form>
