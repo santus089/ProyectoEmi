@@ -22,8 +22,11 @@ export default function AgendaMensualPage() {
     const [modoEdicion, setModoEdicion] = useState(false);
     const [idCitaAEditar, setIdCitaAEditar] = useState<number | null>(null);
 
-    // Estados del formulario de reserva
+    // --- ESTADOS DEL FORMULARIO Y BUSCADOR DE PACIENTES ---
     const [pacienteId, setPacienteId] = useState("");
+    const [busquedaPaciente, setBusquedaPaciente] = useState("");
+    const [mostrarResultados, setMostrarResultados] = useState(false);
+
     const [fecha, setFecha] = useState("");
     const [hora, setHora] = useState("");
     const [horaFin, setHoraFin] = useState("");
@@ -85,11 +88,21 @@ export default function AgendaMensualPage() {
     const citasDelDiaSeleccionado = citas.filter(c => c.fecha === diaSeleccionado)
         .sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
 
+    // --- FILTRADO EN TIEMPO REAL POR RUT O NOMBRE/APELLIDO ---
+    const pacientesFiltrados = pacientes.filter(p => {
+        const termino = busquedaPaciente.toLowerCase().trim();
+        const nombreCompleto = `${p.nombre || ''} ${p.apellido || ''}`.toLowerCase();
+        const rut = (p.rut || '').toLowerCase();
+        return nombreCompleto.includes(termino) || rut.includes(termino);
+    });
+
     // --- MANEJADORES DE FORMULARIO Y EDICIÓN ---
     const abrirNuevaCita = () => {
         setModoEdicion(false);
         setIdCitaAEditar(null);
         setPacienteId("");
+        setBusquedaPaciente("");
+        setMostrarResultados(false);
         setFecha(diaSeleccionado || fechaHoyString);
         setHora("");
         setHoraFin("");
@@ -101,7 +114,25 @@ export default function AgendaMensualPage() {
     const abrirEditorCita = (cita: any) => {
         setModoEdicion(true);
         setIdCitaAEditar(cita.id);
-        setPacienteId(cita.pacienteId || cita.Paciente?.id || "");
+        
+        // Obtenemos el ID del paciente de la cita
+        const pId = cita.pacienteId || cita.Paciente?.id;
+        setPacienteId(pId ? pId.toString() : "");
+
+        // Buscamos al paciente completo en la lista general de pacientes
+        const pacienteCompleto = pacientes.find(p => String(p.id) === String(pId));
+
+        if (pacienteCompleto) {
+            // Mostramos Nombre + Apellido + RUT
+            setBusquedaPaciente(`${pacienteCompleto.nombre} ${pacienteCompleto.apellido} (${pacienteCompleto.rut})`);
+        } else if (cita.Paciente) {
+            // Respaldo por si se encuentra en la relación de la cita
+            setBusquedaPaciente(`${cita.Paciente.nombre} ${cita.Paciente.apellido} (${cita.Paciente.rut || ''})`);
+        } else {
+            setBusquedaPaciente("");
+        }
+
+        setMostrarResultados(false);
         setFecha(cita.fecha || "");
         setHora(cita.hora ? cita.hora.substring(0, 5) : "");
         setHoraFin(cita.horaFin ? cita.horaFin.substring(0, 5) : "");
@@ -114,10 +145,25 @@ export default function AgendaMensualPage() {
         setMostrarFormulario(false);
         setModoEdicion(false);
         setIdCitaAEditar(null);
+        setPacienteId("");
+        setBusquedaPaciente("");
+        setMostrarResultados(false);
+    };
+
+    const seleccionarPaciente = (p: any) => {
+        setPacienteId(p.id);
+        setBusquedaPaciente(`${p.nombre} ${p.apellido} (${p.rut})`);
+        setMostrarResultados(false);
     };
 
     async function manejarEnvio(e: React.FormEvent) {
         e.preventDefault();
+
+        if (!pacienteId) {
+            alert("Por favor seleccione un paciente válido de la lista desplegable.");
+            return;
+        }
+
         setGuardando(true);
 
         const datosCita = { pacienteId, fecha, hora, horaFin, modalidad, motivo };
@@ -133,7 +179,6 @@ export default function AgendaMensualPage() {
 
         if (resultado.success) {
             alert(modoEdicion ? "¡Cita actualizada exitosamente!" : "¡Hora agendada exitosamente en el calendario!");
-            setPacienteId(""); setFecha(""); setHora(""); setHoraFin(""); setMotivo("");
             cerrarModal();
             cargarDatos();
         } else {
@@ -285,17 +330,6 @@ export default function AgendaMensualPage() {
                                                         }}>
                                                             {cita.estado || 'Pendiente'}
                                                         </span>
-                                                        <span style={{ 
-                                                            backgroundColor: cita.modalidad === 'remota' ? '#e0e7ff' : '#def7ec', 
-                                                            color: cita.modalidad === 'remota' ? '#3730a3' : '#460354', 
-                                                            fontSize: '0.75rem', 
-                                                            padding: '0.2rem 0.6rem', 
-                                                            borderRadius: '12px', 
-                                                            fontWeight: 'bold',
-                                                            textTransform: 'capitalize'
-                                                        }}>
-                                                            {cita.modalidad || 'Presencial'}
-                                                        </span>
                                                     </div>
 
                                                     {/* BOTONES DE EDITAR Y BORRAR */}
@@ -334,14 +368,64 @@ export default function AgendaMensualPage() {
                             <button type='button' className="btn-cerrar-x" onClick={cerrarModal}>&times;</button>
                         </div>
                         <form onSubmit={manejarEnvio} className="paciente-form">
-                            <div className='form-group'>
-                                <label>Seleccionar Paciente</label>
-                                <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} required style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', color: '#333' }}>
-                                    <option value="" disabled>Seleccione un paciente...</option>
-                                    {pacientes.map(p => (
-                                        <option key={p.id} value={p.id}>{p.nombre} {p.apellido} ({p.rut})</option>
-                                    ))}
-                                </select>
+                            
+                            {/* BUSCADOR AUTOCOMPLETADO POR RUT O NOMBRE Y APELLIDO */}
+                            <div className='form-group' style={{ position: 'relative' }}>
+                                <label>Buscar Paciente (Nombre, Apellido o Rut)</label>
+                                <input 
+                                    type="text"
+                                    placeholder="Ej: Juan Perez o 12.345.678-9"
+                                    value={busquedaPaciente}
+                                    onChange={(e) => {
+                                        setBusquedaPaciente(e.target.value);
+                                        setPacienteId(""); // Resetea la selección si cambia el texto
+                                        setMostrarResultados(true);
+                                    }}
+                                    onFocus={() => setMostrarResultados(true)}
+                                    required
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: '#333' }}
+                                />
+
+                                {/* Desplegable dinámico de resultados */}
+                                {mostrarResultados && busquedaPaciente.trim().length > 0 && (
+                                    <div style={{ 
+                                        position: 'absolute', 
+                                        top: '100%', 
+                                        left: 0, 
+                                        right: 0, 
+                                        maxHeight: '180px', 
+                                        overflowY: 'auto', 
+                                        backgroundColor: '#ffffff', 
+                                        border: '1px solid #cbd5e0', 
+                                        borderRadius: '0 0 6px 6px', 
+                                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)', 
+                                        zIndex: 100 
+                                    }}>
+                                        {pacientesFiltrados.length === 0 ? (
+                                            <div style={{ padding: '0.6rem', color: '#a0aec0', fontSize: '0.9rem' }}>
+                                                No se encontraron coincidencias.
+                                            </div>
+                                        ) : (
+                                            pacientesFiltrados.map(p => (
+                                                <div 
+                                                    key={p.id}
+                                                    onClick={() => seleccionarPaciente(p)}
+                                                    style={{ 
+                                                        padding: '0.6rem', 
+                                                        cursor: 'pointer', 
+                                                        borderBottom: '1px solid #edf2f7', 
+                                                        fontSize: '0.9rem',
+                                                        color: '#2d3748'
+                                                    }}
+                                                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f7fafc')}
+                                                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                                                >
+                                                    <strong>{p.nombre} {p.apellido}</strong> <span style={{ color: '#718096', fontSize: '0.85rem' }}>({p.rut})</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className='form-row'>
