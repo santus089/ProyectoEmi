@@ -9,6 +9,7 @@ export interface DatosAntropometria {
   diametroFemoral: number; // cm
 
   // Perímetros (en cm)
+  perimetroBrazoRelajadoDer: number;   // cm
   perimetroBrazoFlexionadoDer: number; // cm
   perimetroMusloDer: number;           // cm
   perimetroGemeloDer: number;          // cm
@@ -27,26 +28,26 @@ export interface DatosAntropometria {
 export function calcularResultadosAntropometria(d: DatosAntropometria) {
   const esMasculino = d.genero?.toLowerCase() === "masculino";
 
-  // 1. Sumatoria de 6 Pliegues (Yuhasz oficial: Tricipital, Subescapular, Supraespinal, Abdominal, Muslo, Gemelo)
-  const sumatoria6P = (d.pliegueTricipital || 0) + 
-                      (d.pliegueSubescapular || 0) + 
-                      (d.pliegueSupraespinal || 0) + 
-                      (d.pliegueAbdominal || 0) + 
-                      (d.pliegueMuslo || 0) + 
+  // 1. Sumatoria de 6 Pliegues (Yuhasz oficial: Tricipital, Subescapular, Suprailiaco, Abdominal, Muslo, Gemelo)
+  const sumatoria6P = (d.pliegueTricipital || 0) +
+                      (d.pliegueSubescapular || 0) +
+                      (d.pliegueSuprailiaco || 0) +
+                      (d.pliegueAbdominal || 0) +
+                      (d.pliegueMuslo || 0) +
                       (d.pliegueGemelo || 0);
 
   // 2. Porcentaje de Grasa Corporal (Fórmula Yuhasz)
   let porcentajeGrasa = 0;
   if (esMasculino) {
-    porcentajeGrasa = 3.64 + (0.097 * sumatoria6P);
+    porcentajeGrasa = (0.1051 * sumatoria6P) + 2.585;
   } else {
-    porcentajeGrasa = 4.56 + (0.143 * sumatoria6P);
+    porcentajeGrasa = (0.1548 * sumatoria6P) + 3.580; 
   }
   const kgGrasa = (porcentajeGrasa / 100) * d.peso;
 
   // 3. Masa Muscular (Ecuación de Lee et al., 2000)
   // Perímetros corregidos por pliegues (cm)
-  const pbCorr = d.perimetroBrazoFlexionadoDer - (Math.PI * (d.pliegueTricipital / 10));
+  const pbCorr = d.perimetroBrazoRelajadoDer - (Math.PI * (d.pliegueTricipital / 10));
   const pmCorr = d.perimetroMusloDer - (Math.PI * (d.pliegueMuslo / 10));
   const pgCorr = d.perimetroGemeloDer - (Math.PI * (d.pliegueGemelo / 10));
 
@@ -58,7 +59,7 @@ export function calcularResultadosAntropometria(d: DatosAntropometria) {
     (0.00744 * Math.pow(pbCorr, 2)) + 
     (0.00088 * Math.pow(pmCorr, 2)) + 
     (0.00441 * Math.pow(pgCorr, 2))
-  ) + (2.4 * sexoLee) - (0.048 * (d.edad || 25)) - 2.034;
+  ) + (2.4 * sexoLee) - (0.048 * (d.edad)) - 2.034;
 
   const porcentajeMasaMuscular = (kgMasaMuscular / d.peso) * 100;
 

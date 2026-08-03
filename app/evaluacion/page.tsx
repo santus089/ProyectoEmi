@@ -419,10 +419,11 @@ export default function EvaluacionesPage() {
     const resultadosCalculados = pacienteActual ? calcularResultadosAntropometria({
         peso: parseNum(antropometria.peso),
         talla: parseNum(antropometria.talla),
-        genero: pacienteActual.genero || "Masculino",
+        genero: pacienteActual.genero || "masculino",
         edad: obtenerEdad(pacienteActual.fechaNacimiento),
         diametroHumeral: parseNum(antropometria.diametroHumeral),
         diametroFemoral: parseNum(antropometria.diametroFemoral),
+        perimetroBrazoRelajadoDer: parseNum(antropometria.perimetroBrazoRelajadoDer),
         perimetroBrazoFlexionadoDer: parseNum(antropometria.perimetroBrazoFlexionadoDer),
         perimetroMusloDer: parseNum(antropometria.perimetroMusloDer),
         perimetroGemeloDer: parseNum(antropometria.perimetroGemeloDer),
@@ -557,6 +558,42 @@ export default function EvaluacionesPage() {
                         <p><strong>Mesomorfia:</strong> ${resultadosCalculados.mesomorfia}</p>
                         <p><strong>Ectomorfia:</strong> ${resultadosCalculados.ectomorfia}</p>
                         <p><strong>Coordenadas Somatocarta:</strong> X = ${resultadosCalculados.x}, Y = ${resultadosCalculados.y}</p>
+                    </div>
+
+                    <div class="card">
+                        <h3>3. Resumen de Parámetros Medidos</h3>
+                        <h4 style="margin-bottom: 6px; color: #4f46e5;">Diámetros (cm)</h4>
+                        <div class="info-grid" style="margin-bottom: 15px;">
+                            <div><strong>Húmero:</strong> ${antropometria.diametroHumeral || '-'}</div>
+                            <div><strong>Fémur:</strong> ${antropometria.diametroFemoral || '-'}</div>
+                        </div>
+                        <h4 style="margin-bottom: 6px; color: #4f46e5;">Perímetros (cm)</h4>
+                        <div class="info-grid" style="margin-bottom: 15px;">
+                            <div><strong>Brazo Relajado Der:</strong> ${antropometria.perimetroBrazoRelajadoDer || '-'}</div>
+                            <div><strong>Brazo Relajado Izq:</strong> ${antropometria.perimetroBrazoRelajadoIzq || '-'}</div>
+                            <div><strong>Brazo Flexionado Der:</strong> ${antropometria.perimetroBrazoFlexionadoDer || '-'}</div>
+                            <div><strong>Brazo Flexionado Izq:</strong> ${antropometria.perimetroBrazoFlexionadoIzq || '-'}</div>
+                            <div><strong>Pectoral:</strong> ${antropometria.perimetroPectoral || '-'}</div>
+                            <div><strong>Espalda:</strong> ${antropometria.perimetroEspalda || '-'}</div>
+                            <div><strong>Cintura:</strong> ${antropometria.perimetroCintura || '-'}</div>
+                            <div><strong>Cintura Máxima:</strong> ${antropometria.perimetroCinturaMaxima || '-'}</div>
+                            <div><strong>Cadera:</strong> ${antropometria.perimetroCadera || '-'}</div>
+                            <div><strong>Muslo Der:</strong> ${antropometria.perimetroMusloDer || '-'}</div>
+                            <div><strong>Muslo Izq:</strong> ${antropometria.perimetroMusloIzq || '-'}</div>
+                            <div><strong>Gemelo Der:</strong> ${antropometria.perimetroGemeloDer || '-'}</div>
+                            <div><strong>Gemelo Izq:</strong> ${antropometria.perimetroGemeloIzq || '-'}</div>
+                        </div>
+                        <h4 style="margin-bottom: 6px; color: #4f46e5;">Pliegues Cutáneos (mm)</h4>
+                        <div class="info-grid">
+                            <div><strong>Tricipital:</strong> ${antropometria.pliegueTricipital || '-'}</div>
+                            <div><strong>Bicipital:</strong> ${antropometria.pliegueBicipital || '-'}</div>
+                            <div><strong>Subescapular:</strong> ${antropometria.pliegueSubescapular || '-'}</div>
+                            <div><strong>Abdominal:</strong> ${antropometria.pliegueAbdominal || '-'}</div>
+                            <div><strong>Supraespinal:</strong> ${antropometria.pliegueSupraespinal || '-'}</div>
+                            <div><strong>Suprailíaco:</strong> ${antropometria.pliegueSuprailiaco || '-'}</div>
+                            <div><strong>Muslo:</strong> ${antropometria.pliegueMuslo || '-'}</div>
+                            <div><strong>Gemelo:</strong> ${antropometria.pliegueGemelo || '-'}</div>
+                        </div>
                     </div>
 
                     ${antropometria.notas ? `<div class="card"><h3>Notas Adicionales</h3><p>${antropometria.notas}</p></div>` : ''}
