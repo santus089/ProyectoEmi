@@ -201,6 +201,38 @@ export async function borrarCita(id: number) {
   }
 }
 
+// Guarda un registro nuevo de evaluación para el paciente, o actualiza el más
+// reciente que ya exista, para que no se acumule un registro por cada guardado.
+async function guardarOActualizarEvaluacion(tabla: string, pacienteId: number, datos: any) {
+  const { data: existente, error: errorBusqueda } = await supabase
+    .from(tabla)
+    .select('id')
+    .eq('pacienteId', pacienteId)
+    .order('fecha', { ascending: false })
+    .limit(1);
+
+  if (errorBusqueda) return { success: false, error: errorBusqueda.message };
+
+  if (existente && existente.length > 0) {
+    const { data, error } = await supabase
+      .from(tabla)
+      .update(datos)
+      .eq('id', existente[0].id)
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  }
+
+  const { data, error } = await supabase
+    .from(tabla)
+    .insert([datos])
+    .select();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data };
+}
+
 //Guardar o actualizar la Anamnesis de un paciente
 export async function guardarAnamnesis(datos: {
   pacienteId: number;
@@ -211,22 +243,7 @@ export async function guardarAnamnesis(datos: {
   objetivos: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('EvaluacionAnamnesis')
-      .insert([
-        {
-          pacienteId: datos.pacienteId,
-          antecedentesMorbidos: datos.antecedentesMorbidos,
-          antecedentesMedicos: datos.antecedentesMedicos,
-          informacionNutricional: datos.informacionNutricional,
-          informacionDeportiva: datos.informacionDeportiva,
-          objetivos: datos.objetivos
-        }
-      ])
-      .select();
-
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return await guardarOActualizarEvaluacion('EvaluacionAnamnesis', datos.pacienteId, datos);
   } catch (err: any) {
     return { success: false, error: err.message || 'Error en el servidor' };
   }
@@ -249,16 +266,10 @@ export async function obtenerAnamnesisPaciente(pacienteId: number) {
 }
 
 
- // Guardar antropometria del paciente
+ // Guardar o actualizar antropometria del paciente
 export async function guardarAntropometria(datos: any) {
   try {
-    const { data, error } = await supabase
-      .from('EvaluacionAntropometria')
-      .insert([datos])
-      .select();
-
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return await guardarOActualizarEvaluacion('EvaluacionAntropometria', datos.pacienteId, datos);
   } catch (err: any) {
     return { success: false, error: err.message || 'Error en el servidor' };
   }
@@ -280,7 +291,7 @@ export async function obtenerAntropometriaPaciente(pacienteId: number) {
     return { success: false, error: err.message, data: [] };
   }
 }
- // Guardar evaluacion:3 FMS
+ // Guardar o actualizar evaluacion:3 FMS
 export async function guardarFMS(datos: {
   pacienteId: number;
   sentadillaProfunda: number;
@@ -294,13 +305,7 @@ export async function guardarFMS(datos: {
   notas?: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('EvaluacionFMS')
-      .insert([datos])
-      .select();
-
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return await guardarOActualizarEvaluacion('EvaluacionFMS', datos.pacienteId, datos);
   } catch (err: any) {
     return { success: false, error: err.message || 'Error en el servidor' };
   }
@@ -323,7 +328,7 @@ export async function obtenerFMSPaciente(pacienteId: number) {
   }
 }
 
-// Guardar Evaluación de Salto Vertical
+// Guardar o actualizar Evaluación de Salto Vertical
 export async function guardarSaltoVertical(datos: {
   pacienteId: number;
   cmj?: number | null;
@@ -335,13 +340,7 @@ export async function guardarSaltoVertical(datos: {
   notas?: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('EvaluacionSaltoVertical')
-      .insert([datos])
-      .select();
-
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return await guardarOActualizarEvaluacion('EvaluacionSaltoVertical', datos.pacienteId, datos);
   } catch (err: any) {
     return { success: false, error: err.message || 'Error en el servidor' };
   }
@@ -363,7 +362,7 @@ export async function obtenerSaltoVerticalPaciente(pacienteId: number) {
   }
 }
 
-// Guardar Evaluación de Velocidad
+// Guardar o actualizar Evaluación de Velocidad
 export async function guardarVelocidad(datos: {
   pacienteId: number;
   tiempo10m?: number | null;
@@ -373,13 +372,7 @@ export async function guardarVelocidad(datos: {
   notas?: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('EvaluacionVelocidad')
-      .insert([datos])
-      .select();
-
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return await guardarOActualizarEvaluacion('EvaluacionVelocidad', datos.pacienteId, datos);
   } catch (err: any) {
     return { success: false, error: err.message || 'Error en el servidor' };
   }
@@ -401,7 +394,7 @@ export async function obtenerVelocidadPaciente(pacienteId: number) {
   }
 }
 
-// Guardar Evaluación de Fuerza Máxima
+// Guardar o actualizar Evaluación de Fuerza Máxima
 export async function guardarFuerzaMaxima(datos: {
   pacienteId: number;
   pesoMuerto?: number | null;
@@ -411,13 +404,7 @@ export async function guardarFuerzaMaxima(datos: {
   notas?: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('EvaluacionFuerzaMaxima')
-      .insert([datos])
-      .select();
-
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return await guardarOActualizarEvaluacion('EvaluacionFuerzaMaxima', datos.pacienteId, datos);
   } catch (err: any) {
     return { success: false, error: err.message || 'Error en el servidor' };
   }
@@ -439,7 +426,7 @@ export async function obtenerFuerzaMaximaPaciente(pacienteId: number) {
   }
 }
 
-// Guardar Evaluación de Gasto Calórico y Nutrición
+// Guardar o actualizar Evaluación de Gasto Calórico y Nutrición
 export async function guardarGastoCalorico(datos: {
   pacienteId: number;
   gastoBasal?: number | null;
@@ -454,13 +441,7 @@ export async function guardarGastoCalorico(datos: {
   especificaciones?: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('EvaluacionGastoCalorico')
-      .insert([datos])
-      .select();
-
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return await guardarOActualizarEvaluacion('EvaluacionGastoCalorico', datos.pacienteId, datos);
   } catch (err: any) {
     return { success: false, error: err.message || 'Error en el servidor' };
   }

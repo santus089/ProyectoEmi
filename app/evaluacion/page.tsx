@@ -1224,11 +1224,11 @@ export default function EvaluacionesPage() {
                                                 <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>🦴 Diámetros (mm)</h3>
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                                                     <div>
-                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Humeral (mm)</label>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Humeral (cm)</label>
                                                         <input type="number" step="0.01" value={antropometria.diametroHumeral} onChange={(e) => manejarCambioAntropometria('diametroHumeral', e.target.value)} placeholder="0.00" style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e0', color: '#333' }} />
                                                     </div>
                                                     <div>
-                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Femoral (mm)</label>
+                                                        <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Femoral (cm)</label>
                                                         <input type="number" step="0.01" value={antropometria.diametroFemoral} onChange={(e) => manejarCambioAntropometria('diametroFemoral', e.target.value)} placeholder="0.00" style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e0', color: '#333' }} />
                                                     </div>
                                                 </div>
