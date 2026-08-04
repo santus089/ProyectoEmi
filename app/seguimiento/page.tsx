@@ -7,6 +7,10 @@ export default function SeguimientoPage(){
             <div className='app-container'>
                 <Sidebar/>
             </div>
+                <div className='content-container' style={{ backgroundColor: '#525e92', padding: '1.5rem', flexGrow: 1, overflowY: 'auto' }}>
+                    
+                </div>
+
         </main>
     )
 }

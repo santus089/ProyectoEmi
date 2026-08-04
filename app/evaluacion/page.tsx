@@ -419,7 +419,7 @@ export default function EvaluacionesPage() {
     const resultadosCalculados = pacienteActual ? calcularResultadosAntropometria({
         peso: parseNum(antropometria.peso),
         talla: parseNum(antropometria.talla),
-        genero: pacienteActual.genero || "masculino",
+        genero: pacienteActual.genero || "Masculino",
         edad: obtenerEdad(pacienteActual.fechaNacimiento),
         diametroHumeral: parseNum(antropometria.diametroHumeral),
         diametroFemoral: parseNum(antropometria.diametroFemoral),

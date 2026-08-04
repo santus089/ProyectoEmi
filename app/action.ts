@@ -462,3 +462,320 @@ export async function obtenerGastoCaloricoPaciente(pacienteId: number) {
     return { success: false, error: err.message, data: [] };
   }
 }
+
+// ==================== ENTRENAMIENTO: GRUPOS DE EJERCICIOS ====================
+
+// Obtener todos los grupos/clasificaciones de ejercicios
+export async function obtenerGruposEjercicio() {
+  try {
+    const { data, error } = await supabase
+      .from('GrupoEjercicio')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+// Crear un nuevo grupo de ejercicios
+export async function crearGrupoEjercicio(nombre: string) {
+  try {
+    const { data, error } = await supabase
+      .from('GrupoEjercicio')
+      .insert([{ nombre }])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Renombrar un grupo de ejercicios
+export async function actualizarGrupoEjercicio(id: number, nombre: string) {
+  try {
+    const { data, error } = await supabase
+      .from('GrupoEjercicio')
+      .update({ nombre })
+      .eq('id', id)
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Borrar un grupo de ejercicios (los ejercicios que lo usaban quedan sin grupo)
+export async function borrarGrupoEjercicio(id: number) {
+  try {
+    const { error } = await supabase
+      .from('GrupoEjercicio')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// ==================== ENTRENAMIENTO: BIBLIOTECA DE EJERCICIOS ====================
+
+// Obtener todos los ejercicios de la biblioteca
+export async function obtenerEjercicios() {
+  try {
+    const { data, error } = await supabase
+      .from('Ejercicio')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error) return { success: false, error: error.message, data: [] };
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+// Crear un nuevo ejercicio en la biblioteca
+export async function crearEjercicio(datos: {
+  grupoId?: number | null;
+  nombre: string;
+  repTiempo?: string;
+  peso?: string;
+  movimiento?: string;
+  series?: string;
+  descanso?: string;
+  rm?: string;
+  comentario?: string;
+  video?: string;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('Ejercicio')
+      .insert([datos])
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Actualizar un ejercicio existente de la biblioteca
+export async function actualizarEjercicio(id: number, datos: any) {
+  try {
+    const { data, error } = await supabase
+      .from('Ejercicio')
+      .update(datos)
+      .eq('id', id)
+      .select();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// Borrar un ejercicio de la biblioteca
+export async function borrarEjercicio(id: number) {
+  try {
+    const { error } = await supabase
+      .from('Ejercicio')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
+
+// ==================== ENTRENAMIENTO: RUTINAS ====================
+
+// Obtener pacientes que tienen al menos una evaluación guardada
+export async function obtenerPacientesEvaluados() {
+  try {
+    const tablasEvaluacion = [
+      'EvaluacionAnamnesis',
+      'EvaluacionAntropometria',
+      'EvaluacionFMS',
+      'EvaluacionSaltoVertical',
+      'EvaluacionVelocidad',
+      'EvaluacionFuerzaMaxima',
+      'EvaluacionGastoCalorico'
+    ];
+
+    const idsEvaluados = new Set<number>();
+
+    for (const tabla of tablasEvaluacion) {
+      const { data, error } = await supabase.from(tabla).select('pacienteId');
+      if (error) return { success: false, error: error.message, data: [] };
+      (data || []).forEach((registro: any) => idsEvaluados.add(registro.pacienteId));
+    }
+
+    if (idsEvaluados.size === 0) return { success: true, data: [] };
+
+    const { data: pacientes, error: errorPacientes } = await supabase
+      .from('Paciente')
+      .select('id, rut, nombre, apellido, correo, fechaNacimiento, telefono, genero')
+      .in('id', Array.from(idsEvaluados))
+      .order('nombre', { ascending: true });
+
+    if (errorPacientes) return { success: false, error: errorPacientes.message, data: [] };
+    return { success: true, data: pacientes || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+// Obtener la rutina más reciente de un paciente, con sus bloques y ejercicios
+export async function obtenerRutinaPaciente(pacienteId: number) {
+  try {
+    const { data: rutinas, error: errorRutina } = await supabase
+      .from('Rutina')
+      .select('*')
+      .eq('pacienteId', pacienteId)
+      .order('fecha', { ascending: false })
+      .limit(1);
+
+    if (errorRutina) return { success: false, error: errorRutina.message, data: null };
+    if (!rutinas || rutinas.length === 0) return { success: true, data: null };
+
+    const rutina = rutinas[0];
+
+    const { data: bloques, error: errorBloques } = await supabase
+      .from('RutinaBloque')
+      .select('*')
+      .eq('rutinaId', rutina.id)
+      .order('orden', { ascending: true });
+
+    if (errorBloques) return { success: false, error: errorBloques.message, data: null };
+
+    const bloqueIds = (bloques || []).map((b: any) => b.id);
+    let ejercicios: any[] = [];
+
+    if (bloqueIds.length > 0) {
+      const { data: ejerciciosData, error: errorEjercicios } = await supabase
+        .from('RutinaEjercicio')
+        .select('*')
+        .in('bloqueId', bloqueIds)
+        .order('orden', { ascending: true });
+
+      if (errorEjercicios) return { success: false, error: errorEjercicios.message, data: null };
+      ejercicios = ejerciciosData || [];
+    }
+
+    return { success: true, data: { rutina, bloques: bloques || [], ejercicios } };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: null };
+  }
+}
+
+// Guardar (crear o reemplazar) la rutina completa de un paciente
+export async function guardarRutina(datos: {
+  pacienteId: number;
+  nombre: string;
+  dias: Record<string, Array<{
+    nombre: string;
+    ejercicios: Array<{
+      ejercicioOrigenId?: number | null;
+      nombre: string;
+      repTiempo?: string;
+      peso?: string;
+      movimiento?: string;
+      series?: string;
+      descanso?: string;
+      rm?: string;
+      comentario?: string;
+      video?: string;
+    }>;
+  }>>;
+}) {
+  try {
+    let rutinaId: number;
+
+    const { data: existente, error: errorBusqueda } = await supabase
+      .from('Rutina')
+      .select('id')
+      .eq('pacienteId', datos.pacienteId)
+      .order('fecha', { ascending: false })
+      .limit(1);
+
+    if (errorBusqueda) return { success: false, error: errorBusqueda.message };
+
+    if (existente && existente.length > 0) {
+      rutinaId = existente[0].id;
+      const { error: errorUpdate } = await supabase
+        .from('Rutina')
+        .update({ nombre: datos.nombre, updatedAt: new Date().toISOString() })
+        .eq('id', rutinaId);
+      if (errorUpdate) return { success: false, error: errorUpdate.message };
+
+      // Al reemplazar por completo, se eliminan los bloques anteriores (cascada borra sus ejercicios)
+      const { error: errorDelete } = await supabase
+        .from('RutinaBloque')
+        .delete()
+        .eq('rutinaId', rutinaId);
+      if (errorDelete) return { success: false, error: errorDelete.message };
+    } else {
+      const { data: nueva, error: errorInsert } = await supabase
+        .from('Rutina')
+        .insert([{ pacienteId: datos.pacienteId, nombre: datos.nombre }])
+        .select();
+      if (errorInsert) return { success: false, error: errorInsert.message };
+      rutinaId = nueva[0].id;
+    }
+
+    for (const dia of Object.keys(datos.dias)) {
+      const bloques = datos.dias[dia] || [];
+
+      for (let indiceBloque = 0; indiceBloque < bloques.length; indiceBloque++) {
+        const bloque = bloques[indiceBloque];
+
+        const { data: nuevoBloque, error: errorBloque } = await supabase
+          .from('RutinaBloque')
+          .insert([{ rutinaId, dia, orden: indiceBloque, nombre: bloque.nombre || '' }])
+          .select();
+
+        if (errorBloque) return { success: false, error: errorBloque.message };
+        const bloqueId = nuevoBloque[0].id;
+
+        if (bloque.ejercicios.length > 0) {
+          const payloadEjercicios = bloque.ejercicios.map((ej, indiceEj) => ({
+            bloqueId,
+            ejercicioOrigenId: ej.ejercicioOrigenId || null,
+            orden: indiceEj,
+            nombre: ej.nombre,
+            repTiempo: ej.repTiempo,
+            peso: ej.peso,
+            movimiento: ej.movimiento,
+            series: ej.series,
+            descanso: ej.descanso,
+            rm: ej.rm,
+            comentario: ej.comentario,
+            video: ej.video
+          }));
+
+          const { error: errorEjercicios } = await supabase
+            .from('RutinaEjercicio')
+            .insert(payloadEjercicios);
+          if (errorEjercicios) return { success: false, error: errorEjercicios.message };
+        }
+      }
+    }
+
+    return { success: true, rutinaId };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Error en el servidor' };
+  }
+}
