@@ -779,3 +779,29 @@ export async function guardarRutina(datos: {
     return { success: false, error: err.message || 'Error en el servidor' };
   }
 }
+
+// Obtener todo el historial de evaluaciones para seguimiento
+export async function obtenerHistorialCompletoPaciente(pacienteId: number) {
+  try {
+    const [resAntro, resFms, resSalto, resVel, resFuerza] = await Promise.all([
+      supabase.from('EvaluacionAntropometria').select('*').eq('pacienteId', pacienteId).order('fecha', { ascending: true }),
+      supabase.from('EvaluacionFMS').select('*').eq('pacienteId', pacienteId).order('fecha', { ascending: true }),
+      supabase.from('EvaluacionSaltoVertical').select('*').eq('pacienteId', pacienteId).order('fecha', { ascending: true }),
+      supabase.from('EvaluacionVelocidad').select('*').eq('pacienteId', pacienteId).order('fecha', { ascending: true }),
+      supabase.from('EvaluacionFuerzaMaxima').select('*').eq('pacienteId', pacienteId).order('fecha', { ascending: true })
+    ]);
+
+    return {
+      success: true,
+      data: {
+        antropometria: resAntro.data || [],
+        fms: resFms.data || [],
+        salto: resSalto.data || [],
+        velocidad: resVel.data || [],
+        fuerza: resFuerza.data || []
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
