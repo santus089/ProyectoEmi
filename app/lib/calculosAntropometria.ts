@@ -82,11 +82,11 @@ export function calcularResultadosAntropometria(d: DatosAntropometria) {
   const tallaMetros = d.talla / 100;
   const sexoLee = esMasculino ? 1 : 0;
 
-  const kgMasaMuscular = tallaMetros * (
+  const kgMasaMuscular = (tallaMetros * (
     (0.00744 * Math.pow(pbCorr, 2)) + 
     (0.00088 * Math.pow(pmCorr, 2)) + 
     (0.00441 * Math.pow(pgCorr, 2))
-  ) + (2.4 * sexoLee) - (0.048 * edad) - 2.034;
+  ) + (2.4 * sexoLee) - (0.048 * edad) + 7.8);
 
   const porcentajeMasaMuscular = (kgMasaMuscular / d.peso) * 100;
 
