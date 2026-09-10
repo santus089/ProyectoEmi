@@ -76,12 +76,36 @@ export default function SeguimientoPage() {
 
   // --- PREPARACIÓN DE DATOS PARA LOS GRÁFICOS ---
 
-  // A3-2: Antropometría (% Grasa, % M. Muscular, Peso)
-  const dataAntro = historial.antropometria.map(item => ({
+  // A3-2.1: Composición Corporal (% Grasa, % M. Muscular, Peso)
+  const dataAntroComposicion = historial.antropometria.map(item => ({
     fecha: formatearFecha(item.fecha),
     peso: item.peso || 0,
     grasa: item.porcentajeGrasa || 0,
     musculo: item.porcentajeMasaMuscular || 0
+  }));
+
+  // A3-2.2: Perímetros Corporales (cm)
+  const dataAntroPerimetros = historial.antropometria.map(item => ({
+    fecha: formatearFecha(item.fecha),
+    brazoRelajado: item.perimetroBrazoRelajadoDer || 0,
+    brazoFlexionado: item.perimetroBrazoFlexionadoDer || 0,
+    cintura: item.perimetroCintura || 0,
+    cadera: item.perimetroCadera || 0,
+    muslo: item.perimetroMusloDer || 0,
+    gemelo: item.perimetroGemeloDer || 0
+  }));
+
+  // A3-2.3: Pliegues Cutáneos (mm)
+  const dataAntroPliegues = historial.antropometria.map(item => ({
+    fecha: formatearFecha(item.fecha),
+    triceps: item.pliegueTricipital || 0,
+    biceps: item.pliegueBicipital || 0,
+    subescapular: item.pliegueSubescapular || 0,
+    abdominal: item.pliegueAbdominal || 0,
+    supraespinal: item.pliegueSupraespinal || 0,
+    suprailiaco: item.pliegueSuprailiaco || 0,
+    muslo: item.pliegueMuslo || 0,
+    gemelo: item.pliegueGemelo || 0
   }));
 
   // A3-3: FMS (Puntaje Total)
@@ -179,22 +203,78 @@ export default function SeguimientoPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 
                 {/* 1. SECCIÓN A3-2: ANTROPOMETRÍA */}
-                <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <h3 style={{ margin: '0 0 1rem', color: '#4f46e5' }}>📊 A3-2: Composición Corporal (% Grasa vs % Músculo)</h3>
-                  {dataAntro.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={dataAntro}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="fecha" />
-                        <YAxis unit="%" />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="grasa" name="% Grasa Corporal" stroke="#ef4444" strokeWidth={3} />
-                        <Line type="monotone" dataKey="musculo" name="% Masa Muscular" stroke="#10b981" strokeWidth={3} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                  <div>
+                    <h2 style={{ margin: '0 0 0.3rem', color: '#1e293b', fontSize: '1.3rem', fontWeight: 'bold' }}>
+                      📐 A3-2: Antropometría Integral
+                    </h2>
+                    <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Composición corporal, perímetros musculares y pliegues cutáneos.</span>
+                  </div>
+
+                  {dataAntroComposicion.length > 0 ? (
+                    <>
+                      {/* Gráfico 1: Composición Corporal */}
+                      <div>
+                        <h4 style={{ margin: '0 0 0.8rem', color: '#4f46e5', fontSize: '1.05rem' }}>📊 Composición Corporal y Peso</h4>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={dataAntroComposicion}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="fecha" />
+                            <YAxis yAxisId="porcentaje" unit="%" domain={[0, 'auto']} />
+                            <YAxis yAxisId="peso" orientation="right" unit=" kg" domain={['dataMin - 5', 'dataMax + 5']} />
+                            <Tooltip />
+                            <Legend />
+                            <Line yAxisId="porcentaje" type="monotone" dataKey="grasa" name="% Grasa Corporal" stroke="#ef4444" strokeWidth={3} />
+                            <Line yAxisId="porcentaje" type="monotone" dataKey="musculo" name="% Masa Muscular" stroke="#10b981" strokeWidth={3} />
+                            <Line yAxisId="peso" type="monotone" dataKey="peso" name="Peso (kg)" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 5" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Gráfico 2: Perímetros Corporales */}
+                      <div>
+                        <h4 style={{ margin: '0 0 0.8rem', color: '#4f46e5', fontSize: '1.05rem' }}>📏 Perímetros Corporales (cm)</h4>
+                        <ResponsiveContainer width="100%" height={320}>
+                          <LineChart data={dataAntroPerimetros}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="fecha" />
+                            <YAxis unit=" cm" domain={['dataMin - 5', 'auto']} />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="brazoFlexionado" name="Brazo Flex. Der" stroke="#f59e0b" strokeWidth={2.5} />
+                            <Line type="monotone" dataKey="brazoRelajado" name="Brazo Relaj. Der" stroke="#fbbf24" strokeWidth={2} strokeDasharray="4 4" />
+                            <Line type="monotone" dataKey="cintura" name="Cintura" stroke="#06b6d4" strokeWidth={2.5} />
+                            <Line type="monotone" dataKey="cadera" name="Cadera" stroke="#3b82f6" strokeWidth={2.5} />
+                            <Line type="monotone" dataKey="muslo" name="Muslo Der" stroke="#8b5cf6" strokeWidth={2.5} />
+                            <Line type="monotone" dataKey="gemelo" name="Gemelo Der" stroke="#ec4899" strokeWidth={2.5} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Gráfico 3: Pliegues Cutáneos */}
+                      <div>
+                        <h4 style={{ margin: '0 0 0.8rem', color: '#4f46e5', fontSize: '1.05rem' }}>🩸 Pliegues Cutáneos (mm)</h4>
+                        <ResponsiveContainer width="100%" height={320}>
+                          <LineChart data={dataAntroPliegues}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="fecha" />
+                            <YAxis unit=" mm" domain={[0, 'auto']} />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="triceps" name="Tríceps" stroke="#ef4444" strokeWidth={2} />
+                            <Line type="monotone" dataKey="biceps" name="Bíceps" stroke="#f97316" strokeWidth={2} />
+                            <Line type="monotone" dataKey="subescapular" name="Subescapular" stroke="#eab308" strokeWidth={2} />
+                            <Line type="monotone" dataKey="abdominal" name="Abdominal" stroke="#10b981" strokeWidth={2.5} />
+                            <Line type="monotone" dataKey="supraespinal" name="Supraespinal" stroke="#06b6d4" strokeWidth={2} />
+                            <Line type="monotone" dataKey="suprailiaco" name="Suprailíaco" stroke="#3b82f6" strokeWidth={2} />
+                            <Line type="monotone" dataKey="muslo" name="Muslo" stroke="#8b5cf6" strokeWidth={2.5} />
+                            <Line type="monotone" dataKey="gemelo" name="Gemelo" stroke="#ec4899" strokeWidth={2} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </>
                   ) : (
-                    <p style={{ color: '#a0aec0', fontStyle: 'italic' }}>Sin evaluaciones registradas.</p>
+                    <p style={{ color: '#a0aec0', fontStyle: 'italic', margin: 0 }}>Sin evaluaciones antropométricas registradas.</p>
                   )}
                 </div>
 
