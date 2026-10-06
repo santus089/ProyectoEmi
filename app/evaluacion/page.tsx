@@ -18,6 +18,7 @@ import {
 } from '../action';
 
 import { calcularResultadosAntropometria } from '../lib/calculosAntropometria';
+import { escapeHtml } from '../lib/escapeHtml';
 
 
 export default function EvaluacionesPage() {
@@ -517,7 +518,7 @@ export default function EvaluacionesPage() {
         ventanaPDF.document.write(`
             <html>
                 <head>
-                    <title>Informe Antropométrico - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <title>Informe Antropométrico - ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</title>
                     <style>
                         @page {
                             size: auto;
@@ -537,9 +538,9 @@ export default function EvaluacionesPage() {
                     <h1>Informe de Evaluación Antropométrica (ISAK)</h1>
                     
                     <div class="info-grid">
-                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
-                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
-                        <div><strong>Género:</strong> ${pacienteActual.genero}</div>
+                        <div><strong>Paciente:</strong> ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</div>
+                        <div><strong>RUT:</strong> ${escapeHtml(pacienteActual.rut)}</div>
+                        <div><strong>Género:</strong> ${escapeHtml(pacienteActual.genero)}</div>
                         <div><strong>Edad:</strong> ${obtenerEdad(pacienteActual.fechaNacimiento)} años</div>
                         <div><strong>Peso:</strong> ${antropometria.peso} Kg</div>
                         <div><strong>Estatura:</strong> ${antropometria.talla} cm</div>
@@ -596,7 +597,7 @@ export default function EvaluacionesPage() {
                         </div>
                     </div>
 
-                    ${antropometria.notas ? `<div class="card"><h3>Notas Adicionales</h3><p>${antropometria.notas}</p></div>` : ''}
+                    ${antropometria.notas ? `<div class="card"><h3>Notas Adicionales</h3><p>${escapeHtml(antropometria.notas)}</p></div>` : ''}
                 </body>
             </html>
         `);
@@ -641,7 +642,7 @@ export default function EvaluacionesPage() {
         ventanaPDF.document.write(`
             <html>
                 <head>
-                    <title>Informe FMS - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <title>Informe FMS - ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</title>
                     <style>
                         @page {
                             size: auto;
@@ -664,8 +665,8 @@ export default function EvaluacionesPage() {
                     <h1>Informe de Evaluación de Movimiento (FMS)</h1>
 
                     <div class="info-grid">
-                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
-                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Paciente:</strong> ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</div>
+                        <div><strong>RUT:</strong> ${escapeHtml(pacienteActual.rut)}</div>
                         <div><strong>Fecha de Evaluación:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
                     </div>
 
@@ -696,7 +697,7 @@ export default function EvaluacionesPage() {
                         "${mensajeDiagnostico}"
                     </div>
 
-                    ${fmsData.notas ? `<div style="margin-top: 20px; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;"><strong>Notas / Observaciones:</strong><p>${fmsData.notas}</p></div>` : ''}
+                    ${fmsData.notas ? `<div style="margin-top: 20px; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;"><strong>Notas / Observaciones:</strong><p>${escapeHtml(fmsData.notas)}</p></div>` : ''}
                 </body>
             </html>
         `);
@@ -735,7 +736,7 @@ export default function EvaluacionesPage() {
         ventanaPDF.document.write(`
             <html>
                 <head>
-                    <title>Informe Salto Vertical - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <title>Informe Salto Vertical - ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</title>
                     <style>
                         @page {
                             size: auto;
@@ -757,8 +758,8 @@ export default function EvaluacionesPage() {
                     <h1>Informe de Evaluación de Salto Vertical (A3-4)</h1>
                     
                     <div class="info-grid">
-                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
-                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Paciente:</strong> ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</div>
+                        <div><strong>RUT:</strong> ${escapeHtml(pacienteActual.rut)}</div>
                         <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
                     </div>
 
@@ -779,7 +780,7 @@ export default function EvaluacionesPage() {
                         </tbody>
                     </table>
 
-                    ${saltoVerticalData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${saltoVerticalData.notas}</p></div>` : ''}
+                    ${saltoVerticalData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${escapeHtml(saltoVerticalData.notas)}</p></div>` : ''}
                 </body>
             </html>
         `);
@@ -816,7 +817,7 @@ export default function EvaluacionesPage() {
         ventanaPDF.document.write(`
             <html>
                 <head>
-                    <title>Informe Velocidad - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <title>Informe Velocidad - ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</title>
                     <style>
                         @page { 
                             size: auto; 
@@ -843,8 +844,8 @@ export default function EvaluacionesPage() {
                     <h1>Informe de Evaluación de Velocidad (A3-5)</h1>
                     
                     <div class="info-grid">
-                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
-                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Paciente:</strong> ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</div>
+                        <div><strong>RUT:</strong> ${escapeHtml(pacienteActual.rut)}</div>
                         <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
                     </div>
 
@@ -870,7 +871,7 @@ export default function EvaluacionesPage() {
                         </tbody>
                     </table>
 
-                    ${velocidadData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${velocidadData.notas}</p></div>` : ''}
+                    ${velocidadData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${escapeHtml(velocidadData.notas)}</p></div>` : ''}
                 </body>
             </html>
         `);
@@ -907,7 +908,7 @@ export default function EvaluacionesPage() {
         ventanaPDF.document.write(`
             <html>
                 <head>
-                    <title>Informe Fuerza Máxima - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <title>Informe Fuerza Máxima - ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</title>
                     <style>
                         @page { 
                             size: auto; 
@@ -934,8 +935,8 @@ export default function EvaluacionesPage() {
                     <h1>Informe de Evaluación de Fuerza Máxima (A3-6)</h1>
                     
                     <div class="info-grid">
-                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
-                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Paciente:</strong> ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</div>
+                        <div><strong>RUT:</strong> ${escapeHtml(pacienteActual.rut)}</div>
                         <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
                     </div>
 
@@ -957,7 +958,7 @@ export default function EvaluacionesPage() {
                         </tbody>
                     </table>
 
-                    ${fuerzaData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${fuerzaData.notas}</p></div>` : ''}
+                    ${fuerzaData.notas ? `<div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px;"><strong>Observaciones / Notas:</strong><p>${escapeHtml(fuerzaData.notas)}</p></div>` : ''}
                 </body>
             </html>
         `);
@@ -999,7 +1000,7 @@ export default function EvaluacionesPage() {
         ventanaPDF.document.write(`
             <html>
                 <head>
-                    <title>Informe Nutricional - ${pacienteActual.nombre} ${pacienteActual.apellido}</title>
+                    <title>Informe Nutricional - ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</title>
                     <style>
                         @page { 
                             size: auto; 
@@ -1028,8 +1029,8 @@ export default function EvaluacionesPage() {
                     <h1>Informe de Gasto Calórico y Nutrición (A3-7)</h1>
                     
                     <div class="info-grid">
-                        <div><strong>Paciente:</strong> ${pacienteActual.nombre} ${pacienteActual.apellido}</div>
-                        <div><strong>RUT:</strong> ${pacienteActual.rut}</div>
+                        <div><strong>Paciente:</strong> ${escapeHtml(pacienteActual.nombre)} ${escapeHtml(pacienteActual.apellido)}</div>
+                        <div><strong>RUT:</strong> ${escapeHtml(pacienteActual.rut)}</div>
                         <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
                     </div>
 
@@ -1083,7 +1084,7 @@ export default function EvaluacionesPage() {
 
                     ${nutricionData.especificaciones ? `
                         <h3 class="section-title">3. Especificaciones e Indicaciones Nutricionales</h3>
-                        <div class="box-spec">${nutricionData.especificaciones}</div>
+                        <div class="box-spec">${escapeHtml(nutricionData.especificaciones)}</div>
                     ` : ''}
                 </body>
             </html>

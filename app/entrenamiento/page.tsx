@@ -11,6 +11,7 @@ import {
     obtenerEjercicios, crearEjercicio, actualizarEjercicio, borrarEjercicio,
     obtenerPacientesEvaluados, obtenerRutinaPaciente, guardarRutina
 } from '../action';
+import { escapeHtml } from '../lib/escapeHtml';
 
 const DIAS = [
     { key: 'lunes', label: 'Lunes' },
@@ -38,10 +39,6 @@ const estiloBotonPrimario = { backgroundColor: '#4f46e5', color: '#fff', padding
 const estiloBotonSecundario = { backgroundColor: '#edf2f7', color: '#4a5568', padding: '0.6rem 1.2rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' as const };
 const estiloBotonPeligro = { backgroundColor: 'transparent', color: '#e53e3e', padding: '0.3rem 0.5rem', border: 'none', cursor: 'pointer', fontWeight: 'bold' as const, fontSize: '1rem' };
 const estiloCard = { background: '#f8fafc', padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0' };
-
-const escapeHtml = (valor: any) => String(valor ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any
-)[c]);
 
 export default function EntrenamientoPage() {
     const [tab, setTab] = useState<'biblioteca' | 'rutinas'>('biblioteca');
