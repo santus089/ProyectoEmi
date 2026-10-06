@@ -1,8 +1,15 @@
+import 'server-only' // Evita que este archivo (y la key secreta) termine en el navegador
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = "https://tfnzmybzwuiprieyiaoz.supabase.co"
+// Se leen desde .env.local (local) o desde las variables de entorno del hosting
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY
 
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmbnpteWJ6d3VpcHJpZXlpYW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NTg4MzUsImV4cCI6MjA5NzIzNDgzNX0.JcYO6ZzI4vhDnSgw44RjfgVtXZGv6OVmv7Rc1NaMz1k"; // Deja tu clave completa aquí dentro de las comillas
+if (!supabaseUrl || !supabaseSecretKey) {
+  throw new Error('Faltan las variables de entorno SUPABASE_URL y/o SUPABASE_SECRET_KEY')
+}
 
-// Exportamos el cliente directo y blindado, libre de bloqueos
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// La key secreta solo se usa en el servidor (server actions de app/action.ts)
+export const supabase = createClient(supabaseUrl, supabaseSecretKey, {
+  auth: { persistSession: false, autoRefreshToken: false }
+})

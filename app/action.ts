@@ -76,7 +76,7 @@ export async function guardarCita(datos: any) {
           horaFin: datos.horaFin,
           modalidad: datos.modalidad,
           motivo: datos.motivo,
-          estado: datos.estado || 'pendiente'
+          estado: datos.estado || 'Pendiente' // Debe coincidir con el valor que busca actualizar_estado_citas_vencidas()
         }
       ])
       .select()
@@ -201,19 +201,24 @@ export async function borrarCita(id: number) {
   }
 }
 
-// Guarda un registro nuevo de evaluación para el paciente, o actualiza el más
-// reciente que ya exista, para que no se acumule un registro por cada guardado.
+// Fecha calendario (YYYY-MM-DD) en hora de Chile, para comparar días sin descalces por UTC
+const diaEnChile = (fecha: Date | string) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date(fecha));
+
+// Guarda la evaluación del paciente. Si ya existe una del mismo día se actualiza
+// (para no acumular un registro por cada guardado); si la última es de otro día
+// se crea un registro nuevo, así el historial queda disponible para seguimiento.
 async function guardarOActualizarEvaluacion(tabla: string, pacienteId: number, datos: any) {
   const { data: existente, error: errorBusqueda } = await supabase
     .from(tabla)
-    .select('id')
+    .select('id, fecha')
     .eq('pacienteId', pacienteId)
     .order('fecha', { ascending: false })
     .limit(1);
 
   if (errorBusqueda) return { success: false, error: errorBusqueda.message };
 
-  if (existente && existente.length > 0) {
+  if (existente && existente.length > 0 && diaEnChile(existente[0].fecha) === diaEnChile(new Date())) {
     const { data, error } = await supabase
       .from(tabla)
       .update(datos)

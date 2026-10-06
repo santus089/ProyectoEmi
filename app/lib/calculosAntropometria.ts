@@ -45,16 +45,24 @@ export function calcularResultadosAntropometria(d: DatosAntropometria) {
       DC = 1.1620 - (0.0630 * L); // 17 a 19 años
     } else if (edad < 30) {
       DC = 1.1631 - (0.0632 * L); // 20 a 29 años
+    } else if (edad < 40) {
+      DC = 1.1422 - (0.0544 * L); // 30 a 39 años
+    } else if (edad < 50) {
+      DC = 1.1620 - (0.0700 * L); // 40 a 49 años
     } else {
-      DC = 1.1422 - (0.0544 * L); // 30 a 39 años (o más)
+      DC = 1.1715 - (0.0779 * L); // 50 años o más
     }
   } else {
     if (edad < 20) {
       DC = 1.1549 - (0.0678 * L); // 17 a 19 años
     } else if (edad < 30) {
       DC = 1.1599 - (0.0717 * L); // 20 a 29 años
+    } else if (edad < 40) {
+      DC = 1.1423 - (0.0632 * L); // 30 a 39 años
+    } else if (edad < 50) {
+      DC = 1.1333 - (0.0612 * L); // 40 a 49 años
     } else {
-      DC = 1.1423 - (0.0632 * L); // 30 a 39 años (o más)
+      DC = 1.1339 - (0.0645 * L); // 50 años o más
     }
   }
 
@@ -111,7 +119,7 @@ export function calcularResultadosAntropometria(d: DatosAntropometria) {
   let ectomorfia = 0.1;
   if (cap >= 40.75) {
     ectomorfia = (0.732 * cap) - 28.58;
-  } else if (cap > 38.28) {
+  } else if (cap > 38.25) {
     ectomorfia = (0.463 * cap) - 17.63;
   }
 
