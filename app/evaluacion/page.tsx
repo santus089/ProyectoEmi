@@ -1259,7 +1259,7 @@ export default function EvaluacionesPage() {
 
                                             {/* DIÁMETROS */}
                                             <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                                                <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>🦴 Diámetros (mm)</h3>
+                                                <h3 style={{ margin: '0 0 1rem 0', color: '#4f46e5', fontSize: '1.1rem' }}>🦴 Diámetros (cm)</h3>
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                                                     <div>
                                                         <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#4a5568' }}>Humeral (cm)</label>
